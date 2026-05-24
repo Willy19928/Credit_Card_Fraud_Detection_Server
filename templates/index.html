@@ -64,6 +64,22 @@
     50% { opacity:0.5; transform: scale(0.8); }
   }
 
+  .header-right { display: flex; align-items: center; gap: 10px; }
+
+  .lang-btn {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.08em;
+  }
+  .lang-btn:hover { border-color: #444; color: var(--text); }
+
   .status-badge {
     font-size: 0.7rem;
     padding: 4px 12px;
@@ -92,7 +108,7 @@
     letter-spacing: -0.02em;
     margin-bottom: 12px;
   }
-  .hero h1 span { color: var(--fire); }
+  .hero h1 span.fire { color: var(--fire); }
   .hero p { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
 
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
@@ -108,7 +124,6 @@
   }
   .card:hover { border-color: #333340; }
 
-  /* Step done state: green left border + checkmark badge */
   .card.step-done { border-color: rgba(0,200,150,0.35); }
   .card.step-done .card-label { color: var(--safe); }
   .card.step-done .card-label::before { background: var(--safe); }
@@ -158,7 +173,6 @@
     background: rgba(255,68,68,0.05);
   }
 
-  /* Model drop zone: centered text content with consistent height */
   #model-drop-zone {
     padding: 32px 20px;
     display: flex;
@@ -169,7 +183,6 @@
     text-align: center;
   }
 
-  /* Image drop zone: no extra padding — preview box is the visual container */
   #image-drop-zone { padding: 4px; }
 
   .upload-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
@@ -180,7 +193,7 @@
 
   .btn {
     display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 24px; border-radius: 6px;
+    padding: 10px 16px; border-radius: 6px;
     font-family: var(--mono); font-size: 0.78rem; font-weight: 500;
     cursor: pointer; border: 1px solid transparent;
     transition: all 0.15s; letter-spacing: 0.03em;
@@ -192,7 +205,6 @@
   .btn-ghost:hover:not(:disabled) { border-color: #444; }
   .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-row { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
-  .btn { padding: 10px 16px; }
 
   #model-status-bar {
     margin-top: 16px; padding: 10px 14px; border-radius: 6px;
@@ -204,7 +216,6 @@
   #model-status-bar.error { border-color: var(--fire); color: #ff7755; background: rgba(255,69,0,0.05); display: block; }
   #model-status-bar.info { border-color: var(--border); color: var(--muted); display: block; }
 
-  /* Inline error banner (replaces alert()) */
   .error-banner {
     display: none;
     margin-top: 12px; padding: 10px 14px; border-radius: 6px;
@@ -216,7 +227,7 @@
   .error-banner.visible { display: block; }
 
   #image-preview-box {
-    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
     aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center;
     background: #0d0d10; position: relative;
   }
@@ -255,9 +266,7 @@
     border-radius: 50%; animation: spin 0.6s linear infinite; display: none;
     flex-shrink: 0;
   }
-  .spinner.dark {
-    border-color: rgba(0,0,0,0.15); border-top-color: var(--text);
-  }
+  .spinner.dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--text); }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   #console-log {
@@ -286,27 +295,30 @@
     <div class="logo-dot"></div>
     FIRE DETECTION LAB
   </div>
-  <div class="status-badge" id="global-status">
-    <div class="status-dot"></div>
-    <span id="global-status-text">等待模型載入</span>
+  <div class="header-right">
+    <button class="lang-btn" id="lang-btn">EN</button>
+    <div class="status-badge" id="global-status">
+      <div class="status-dot"></div>
+      <span id="global-status-text" data-i18n="status.waiting">等待模型載入</span>
+    </div>
   </div>
 </header>
 
 <main>
   <div class="hero">
-    <h1>AI <span>Fire</span> Detection<br>推論測試平台</h1>
+    <h1>AI <span class="fire">Fire</span> Detection<br><span data-i18n="hero.sub">推論測試平台</span></h1>
     <p>MobileNetV2 · PyTorch · Azure Inference Service</p>
   </div>
 
   <div class="grid">
     <div class="card" id="model-card">
-      <div class="step-done-badge">✓ 已就緒</div>
-      <div class="card-label">Step 01 — 上傳模型</div>
+      <div class="step-done-badge" data-i18n="badge.ready">✓ 已就緒</div>
+      <div class="card-label" data-i18n="step1.label">Step 01 — 上傳模型</div>
 
       <label class="upload-zone" id="model-drop-zone" for="model-file-input">
         <span class="upload-icon">⚙️</span>
-        <h3>拖曳或點擊上傳 best.pt</h3>
-        <p>從 Google Colab 訓練完成後<br>導出的 MobileNetV2 權重檔案</p>
+        <h3 data-i18n="step1.title">拖曳或點擊上傳 best.pt</h3>
+        <p data-i18n="step1.desc" data-i18n-html>從 Google Colab 訓練完成後<br>導出的 MobileNetV2 權重檔案</p>
       </label>
       <input type="file" id="model-file-input" accept=".pt">
 
@@ -315,24 +327,22 @@
       <div class="btn-row">
         <button class="btn btn-ghost" id="upload-model-btn" disabled>
           <div class="spinner dark" id="upload-spinner"></div>
-          <span id="upload-label">📤 上傳模型</span>
+          <span id="upload-label" data-i18n="btn.upload">📤 上傳模型</span>
         </button>
-        <button class="btn btn-ghost" id="check-status-btn">
-          <span>🔍</span> 檢查狀態
-        </button>
+        <button class="btn btn-ghost" id="check-status-btn" data-i18n="btn.check">🔍 檢查狀態</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-label">Step 02 — 選擇測試圖片</div>
+      <div class="card-label" data-i18n="step2.label">Step 02 — 選擇測試圖片</div>
 
       <label class="upload-zone" id="image-drop-zone" for="image-file-input">
         <div id="image-preview-box">
           <div id="image-placeholder">
             <span>🖼️</span>
-            拖曳或點擊上傳圖片<br>支援 JPG / PNG
+            <span data-i18n="step2.drop" data-i18n-html>拖曳或點擊上傳圖片<br>支援 JPG / PNG</span>
           </div>
-          <img id="preview-img" style="display:none" alt="預覽圖片">
+          <img id="preview-img" style="display:none" alt="preview">
         </div>
       </label>
       <input type="file" id="image-file-input" accept="image/*">
@@ -342,19 +352,19 @@
       <div class="btn-row">
         <button class="btn btn-primary" id="infer-btn" disabled>
           <div class="spinner" id="infer-spinner"></div>
-          <span id="infer-label">🔥 開始推論</span>
+          <span id="infer-label" data-i18n="btn.infer">🔥 開始推論</span>
         </button>
-        <button class="btn btn-ghost" id="clear-btn">清除</button>
+        <button class="btn btn-ghost" id="clear-btn" data-i18n="btn.clear">清除</button>
       </div>
     </div>
   </div>
 
-  <div id="result-panel" role="region" aria-label="推論結果">
-    <div class="card-label">推論結果</div>
+  <div id="result-panel" role="region">
+    <div class="card-label" data-i18n="result.title">推論結果</div>
     <div class="result-card" id="result-card">
       <div class="result-emoji" id="result-emoji">—</div>
       <div>
-        <div class="result-label">預測類別</div>
+        <div class="result-label" data-i18n="result.classLabel">預測類別</div>
         <div class="result-class" id="result-class">—</div>
         <div class="result-conf" id="result-conf">—</div>
         <div class="prob-bars" id="prob-bars"></div>
@@ -362,36 +372,172 @@
     </div>
   </div>
 
-  <div id="console-log" role="log" aria-label="操作記錄"></div>
+  <div id="console-log" role="log"></div>
 </main>
 
 <script>
+  // ── i18n ──────────────────────────────────────────────────────────────────
+  const I18N = {
+    zh: {
+      'status.waiting':  '等待模型載入',
+      'status.ready':    '模型已就緒',
+      'hero.sub':        '推論測試平台',
+      'badge.ready':     '✓ 已就緒',
+      'step1.label':     'Step 01 — 上傳模型',
+      'step1.title':     '拖曳或點擊上傳 best.pt',
+      'step1.desc':      '從 Google Colab 訓練完成後<br>導出的 MobileNetV2 權重檔案',
+      'btn.upload':      '📤 上傳模型',
+      'btn.check':       '🔍 檢查狀態',
+      'btn.uploading':   '上傳中...',
+      'step2.label':     'Step 02 — 選擇測試圖片',
+      'step2.drop':      '拖曳或點擊上傳圖片<br>支援 JPG / PNG',
+      'btn.infer':       '🔥 開始推論',
+      'btn.inferring':   '推論中...',
+      'btn.clear':       '清除',
+      'result.title':    '推論結果',
+      'result.classLabel': '預測類別',
+      // dynamic — functions receive variables
+      'log.init':        '系統初始化完成，請上傳 best.pt 或點擊「檢查狀態」',
+      'log.cleared':     '已清除',
+      'log.imgSelected': name => `已選擇圖片：${name}`,
+      'log.wrongDrop':   '拖入的檔案格式不符',
+      'log.fileErr':     '檔案格式錯誤，需要 .pt 檔案',
+      'log.newDetected': '偵測到新模型檔案，請重新上傳以更新',
+      'log.modelSel':    name => `選擇模型：${name}`,
+      'log.uploadStart': '開始上傳模型...',
+      'log.verifying':   '檔案上傳完成，正在驗證模型載入狀態...',
+      'log.uploadFail':  msg => `上傳失敗：${msg}`,
+      'log.uploadErr':   msg => `上傳錯誤：${msg}`,
+      'log.verifyOk':    dev => `模型驗證通過，已就緒 (${dev})`,
+      'log.verifyFail':  '模型未載入，請重新上傳',
+      'log.connFail':    msg => `伺服器連線失敗：${msg}`,
+      'log.checkQuery':  '查詢伺服器狀態...',
+      'log.checkReady':  dev => `模型已就緒 (${dev})`,
+      'log.checkNone':   '伺服器尚未載入模型',
+      'log.inferSend':   '發送推論請求...',
+      'log.inferDone':   (pred, conf) => `推論完成：${pred}（信心度 ${conf}%）`,
+      'log.inferFail':   msg => `推論失敗：${msg}`,
+      'log.netErr':      msg => `網路錯誤：${msg}`,
+      'status.selected': (name, size) => `已選擇：${name} (${size} MB)，請點擊「上傳模型」`,
+      'status.wrongType':'✗ 請選擇 .pt 格式的模型檔案',
+      'status.loaded':   (dev, cls) => `✓ 模型已載入 | 裝置：${dev} | 類別：${cls}`,
+      'status.verifyFail':'伺服器回報模型未載入，請重新上傳',
+      'status.connFail': '✗ 無法連線至伺服器',
+      'status.checkNone':'模型尚未載入，請上傳 best.pt',
+      'infer.fail':      msg => `推論失敗：${msg}`,
+      'infer.connFail':  '連線失敗，請確認伺服器正在運行',
+      'result.conf':     val => `信心度：${val}%`,
+    },
+    en: {
+      'status.waiting':  'Waiting for model',
+      'status.ready':    'Model ready',
+      'hero.sub':        'Inference Platform',
+      'badge.ready':     '✓ Ready',
+      'step1.label':     'Step 01 — Upload Model',
+      'step1.title':     'Drag or click to upload best.pt',
+      'step1.desc':      'Export MobileNetV2 weights<br>from your Google Colab training',
+      'btn.upload':      '📤 Upload Model',
+      'btn.check':       '🔍 Check Status',
+      'btn.uploading':   'Uploading...',
+      'step2.label':     'Step 02 — Select Test Image',
+      'step2.drop':      'Drag or click to upload image<br>JPG / PNG supported',
+      'btn.infer':       '🔥 Run Inference',
+      'btn.inferring':   'Running...',
+      'btn.clear':       'Clear',
+      'result.title':    'Inference Result',
+      'result.classLabel': 'Predicted Class',
+      'log.init':        'Ready — upload best.pt or click Check Status',
+      'log.cleared':     'Cleared',
+      'log.imgSelected': name => `Image selected: ${name}`,
+      'log.wrongDrop':   'Invalid file type dropped',
+      'log.fileErr':     'Invalid file type, need .pt file',
+      'log.newDetected': 'New model file detected — please re-upload',
+      'log.modelSel':    name => `Model selected: ${name}`,
+      'log.uploadStart': 'Starting model upload...',
+      'log.verifying':   'Upload complete, verifying model...',
+      'log.uploadFail':  msg => `Upload failed: ${msg}`,
+      'log.uploadErr':   msg => `Upload error: ${msg}`,
+      'log.verifyOk':    dev => `Model verified, ready (${dev})`,
+      'log.verifyFail':  'Model not loaded — please re-upload',
+      'log.connFail':    msg => `Connection failed: ${msg}`,
+      'log.checkQuery':  'Checking server status...',
+      'log.checkReady':  dev => `Model ready (${dev})`,
+      'log.checkNone':   'Server has no model loaded',
+      'log.inferSend':   'Sending inference request...',
+      'log.inferDone':   (pred, conf) => `Done: ${pred} (confidence ${conf}%)`,
+      'log.inferFail':   msg => `Inference failed: ${msg}`,
+      'log.netErr':      msg => `Network error: ${msg}`,
+      'status.selected': (name, size) => `Selected: ${name} (${size} MB) — click Upload Model`,
+      'status.wrongType':'✗ Please select a .pt model file',
+      'status.loaded':   (dev, cls) => `✓ Model loaded | Device: ${dev} | Classes: ${cls}`,
+      'status.verifyFail':'Server reports model not loaded — re-upload required',
+      'status.connFail': '✗ Cannot connect to server',
+      'status.checkNone':'Model not loaded — please upload best.pt',
+      'infer.fail':      msg => `Inference failed: ${msg}`,
+      'infer.connFail':  'Connection failed — check server is running',
+      'result.conf':     val => `Confidence: ${val}%`,
+    }
+  };
+
+  let lang = localStorage.getItem('lang') || 'zh';
+
+  function t(key, ...args) {
+    const val = I18N[lang][key];
+    if (val === undefined) return key;
+    return typeof val === 'function' ? val(...args) : val;
+  }
+
+  function applyLang() {
+    document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
+    document.getElementById('lang-btn').textContent = lang === 'zh' ? 'EN' : '中文';
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      const raw = I18N[lang][key];
+      if (raw === undefined) return;
+      const str = typeof raw === 'function' ? raw() : raw;
+      if ('i18nHtml' in el.dataset) {
+        el.innerHTML = str;
+      } else {
+        el.textContent = str;
+      }
+    });
+
+    // Re-apply dynamic state text
+    globalText.textContent = t(modelLoaded ? 'status.ready' : 'status.waiting');
+    uploadLabel.textContent = t('btn.upload');
+    inferLabel.textContent  = t('btn.infer');
+
+    localStorage.setItem('lang', lang);
+  }
+
+  // ── App state & elements ──────────────────────────────────────────────────
   const API = '';
   let modelLoaded = false;
-  let imageFile = null;
+  let imageFile   = null;
 
-  const modelInput   = document.getElementById('model-file-input');
-  const imageInput   = document.getElementById('image-file-input');
-  const uploadBtn    = document.getElementById('upload-model-btn');
+  const modelInput    = document.getElementById('model-file-input');
+  const imageInput    = document.getElementById('image-file-input');
+  const uploadBtn     = document.getElementById('upload-model-btn');
   const uploadSpinner = document.getElementById('upload-spinner');
-  const uploadLabel  = document.getElementById('upload-label');
-  const checkBtn     = document.getElementById('check-status-btn');
-  const inferBtn     = document.getElementById('infer-btn');
-  const clearBtn     = document.getElementById('clear-btn');
-  const statusBar    = document.getElementById('model-status-bar');
-  const globalBadge  = document.getElementById('global-status');
-  const globalText   = document.getElementById('global-status-text');
-  const previewImg   = document.getElementById('preview-img');
-  const placeholder  = document.getElementById('image-placeholder');
-  const resultPanel  = document.getElementById('result-panel');
-  const inferSpinner = document.getElementById('infer-spinner');
-  const inferLabel   = document.getElementById('infer-label');
-  const consoleLog   = document.getElementById('console-log');
-  const inferError   = document.getElementById('infer-error');
-  const modelCard    = document.getElementById('model-card');
+  const uploadLabel   = document.getElementById('upload-label');
+  const checkBtn      = document.getElementById('check-status-btn');
+  const inferBtn      = document.getElementById('infer-btn');
+  const clearBtn      = document.getElementById('clear-btn');
+  const statusBar     = document.getElementById('model-status-bar');
+  const globalBadge   = document.getElementById('global-status');
+  const globalText    = document.getElementById('global-status-text');
+  const previewImg    = document.getElementById('preview-img');
+  const placeholder   = document.getElementById('image-placeholder');
+  const resultPanel   = document.getElementById('result-panel');
+  const inferSpinner  = document.getElementById('infer-spinner');
+  const inferLabel    = document.getElementById('infer-label');
+  const consoleLog    = document.getElementById('console-log');
+  const inferError    = document.getElementById('infer-error');
+  const modelCard     = document.getElementById('model-card');
 
   function log(msg, type = 'info') {
-    const now = new Date().toLocaleTimeString('zh-TW', {hour12: false});
+    const now = new Date().toLocaleTimeString('en-GB', {hour12: false});
     const line = document.createElement('div');
     line.className = `log-line ${type}`;
     line.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
@@ -399,25 +545,15 @@
     consoleLog.scrollTop = consoleLog.scrollHeight;
   }
 
-  function setStatus(msg, type) {
-    statusBar.textContent = msg;
-    statusBar.className = type;
-  }
+  function setStatus(msg, type) { statusBar.textContent = msg; statusBar.className = type; }
 
-  function showInferError(msg) {
-    inferError.textContent = msg;
-    inferError.classList.add('visible');
-  }
-
-  function clearInferError() {
-    inferError.textContent = '';
-    inferError.classList.remove('visible');
-  }
+  function showInferError(msg) { inferError.textContent = msg; inferError.classList.add('visible'); }
+  function clearInferError()   { inferError.textContent = ''; inferError.classList.remove('visible'); }
 
   function setModelLoaded(ready) {
     modelLoaded = ready;
-    globalBadge.className = ready ? 'status-badge ready' : 'status-badge';
-    globalText.textContent = ready ? '模型已就緒' : '等待模型載入';
+    globalBadge.className  = ready ? 'status-badge ready' : 'status-badge';
+    globalText.textContent = t(ready ? 'status.ready' : 'status.waiting');
     modelCard.classList.toggle('step-done', ready);
     updateInferBtn();
   }
@@ -427,105 +563,102 @@
   }
 
   function setUploadLoading(loading) {
-    uploadBtn.disabled = loading;
-    checkBtn.disabled = loading;
+    uploadBtn.disabled    = loading;
+    checkBtn.disabled     = loading;
     uploadSpinner.style.display = loading ? 'block' : 'none';
-    uploadLabel.textContent = loading ? '上傳中...' : '📤 上傳模型';
+    uploadLabel.textContent     = loading ? t('btn.uploading') : t('btn.upload');
   }
 
+  // ── Model file select ─────────────────────────────────────────────────────
   modelInput.addEventListener('change', () => {
     const f = modelInput.files[0];
     if (!f) return;
     if (!f.name.endsWith('.pt')) {
-      setStatus('✗ 請選擇 .pt 格式的模型檔案', 'error');
-      log('檔案格式錯誤，需要 .pt 檔案', 'error');
+      setStatus(t('status.wrongType'), 'error');
+      log(t('log.fileErr'), 'error');
       modelInput.value = '';
       return;
     }
-    // Reset model state — new file selected but not yet uploaded.
-    // Prevents inference running against the previously loaded model.
     if (modelLoaded) {
       setModelLoaded(false);
       resultPanel.classList.remove('visible');
-      log('偵測到新模型檔案，請重新上傳以更新', 'info');
+      log(t('log.newDetected'), 'info');
     }
     uploadBtn.disabled = false;
-    setStatus(`已選擇：${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)，請點擊「上傳模型」`, 'info');
-    log(`選擇模型：${f.name}`);
+    setStatus(t('status.selected', f.name, (f.size / 1024 / 1024).toFixed(2)), 'info');
+    log(t('log.modelSel', f.name));
   });
 
+  // ── Upload model ──────────────────────────────────────────────────────────
   uploadBtn.addEventListener('click', async () => {
     const f = modelInput.files[0];
     if (!f) return;
-
     setUploadLoading(true);
-    setStatus('上傳中...', 'info');
-    log('開始上傳模型...');
-
+    setStatus(t('btn.uploading'), 'info');
+    log(t('log.uploadStart'));
     const fd = new FormData();
     fd.append('model', f);
-
     try {
-      const res = await fetch(`${API}/upload_model`, { method: 'POST', body: fd });
+      const res  = await fetch(`${API}/upload_model`, { method: 'POST', body: fd });
       const data = await res.json();
       if (data.success) {
-        log('檔案上傳完成，正在驗證模型載入狀態...', 'info');
-        // Verify server actually loaded the model before enabling inference.
+        log(t('log.verifying'), 'info');
         await verifyModelStatus();
       } else {
         setStatus('✗ ' + data.message, 'error');
-        log('上傳失敗：' + data.message, 'error');
+        log(t('log.uploadFail', data.message), 'error');
         setModelLoaded(false);
       }
     } catch (e) {
-      setStatus('✗ 網路錯誤，請確認伺服器正在運行', 'error');
-      log('上傳錯誤：' + e.message, 'error');
+      setStatus(t('status.connFail'), 'error');
+      log(t('log.uploadErr', e.message), 'error');
     }
-
     setUploadLoading(false);
     uploadBtn.disabled = !modelInput.files[0];
   });
 
+  // ── Verify / Check status ─────────────────────────────────────────────────
   async function verifyModelStatus() {
     try {
-      const res = await fetch(`${API}/model_status`);
+      const res  = await fetch(`${API}/model_status`);
       const data = await res.json();
       if (data.loaded) {
-        setStatus(`✓ 模型已載入 | 裝置：${data.device} | 類別：${data.classes.join(', ')}`, 'success');
-        log(`模型驗證通過，已就緒 (${data.device})`, 'success');
+        setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
+        log(t('log.verifyOk', data.device), 'success');
         setModelLoaded(true);
       } else {
-        setStatus('伺服器回報模型未載入，請重新上傳', 'error');
-        log('模型未載入，請重新上傳', 'error');
+        setStatus(t('status.verifyFail'), 'error');
+        log(t('log.verifyFail'), 'error');
         setModelLoaded(false);
       }
     } catch (e) {
-      setStatus('✗ 無法連線至伺服器', 'error');
-      log('伺服器連線失敗：' + e.message, 'error');
+      setStatus(t('status.connFail'), 'error');
+      log(t('log.connFail', e.message), 'error');
       setModelLoaded(false);
     }
   }
 
   checkBtn.addEventListener('click', async () => {
-    log('查詢伺服器狀態...');
+    log(t('log.checkQuery'));
     try {
-      const res = await fetch(`${API}/model_status`);
+      const res  = await fetch(`${API}/model_status`);
       const data = await res.json();
       if (data.loaded) {
-        setStatus(`✓ 模型已載入 | 裝置：${data.device} | 類別：${data.classes.join(', ')}`, 'success');
-        log(`模型已就緒 (${data.device})`, 'success');
+        setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
+        log(t('log.checkReady', data.device), 'success');
         setModelLoaded(true);
       } else {
-        setStatus('模型尚未載入，請上傳 best.pt', 'info');
-        log('伺服器尚未載入模型');
+        setStatus(t('status.checkNone'), 'info');
+        log(t('log.checkNone'));
         setModelLoaded(false);
       }
     } catch (e) {
-      setStatus('✗ 無法連線至伺服器', 'error');
-      log('伺服器連線失敗：' + e.message, 'error');
+      setStatus(t('status.connFail'), 'error');
+      log(t('log.connFail', e.message), 'error');
     }
   });
 
+  // ── Image select ──────────────────────────────────────────────────────────
   imageInput.addEventListener('change', () => {
     const f = imageInput.files[0];
     if (!f) return;
@@ -535,34 +668,26 @@
     placeholder.style.display = 'none';
     resultPanel.classList.remove('visible');
     clearInferError();
-    log(`已選擇圖片：${f.name}`);
+    log(t('log.imgSelected', f.name));
     updateInferBtn();
   });
 
-  // Drag & drop
-  const modelZone = document.getElementById('model-drop-zone');
-  const imageZone = document.getElementById('image-drop-zone');
-
+  // ── Drag & drop ───────────────────────────────────────────────────────────
   function setupDropZone(zone, input, validateFn) {
     zone.addEventListener('dragover', e => {
       e.preventDefault();
-      const file = e.dataTransfer.items[0];
+      const file  = e.dataTransfer.items[0];
       const valid = !validateFn || validateFn(file);
-      zone.classList.toggle('drag-over', valid);
+      zone.classList.toggle('drag-over',   valid);
       zone.classList.toggle('drag-reject', !valid);
     });
-    zone.addEventListener('dragleave', () => {
-      zone.classList.remove('drag-over', 'drag-reject');
-    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over', 'drag-reject'));
     zone.addEventListener('drop', e => {
       e.preventDefault();
       zone.classList.remove('drag-over', 'drag-reject');
       const file = e.dataTransfer.files[0];
       if (!file) return;
-      if (validateFn && !validateFn(file)) {
-        log('拖入的檔案格式不符', 'error');
-        return;
-      }
+      if (validateFn && !validateFn(file)) { log(t('log.wrongDrop'), 'error'); return; }
       const dt = new DataTransfer();
       dt.items.add(file);
       input.files = dt.files;
@@ -570,40 +695,40 @@
     });
   }
 
-  setupDropZone(modelZone, modelInput, f => f.name ? f.name.endsWith('.pt') : (f.type === '' || f.type === 'application/octet-stream'));
-  setupDropZone(imageZone, imageInput, null);
+  setupDropZone(
+    document.getElementById('model-drop-zone'), modelInput,
+    f => f.name ? f.name.endsWith('.pt') : (f.type === '' || f.type === 'application/octet-stream')
+  );
+  setupDropZone(document.getElementById('image-drop-zone'), imageInput, null);
 
+  // ── Inference ─────────────────────────────────────────────────────────────
   inferBtn.addEventListener('click', async () => {
     if (!imageFile || !modelLoaded) return;
-
     clearInferError();
     inferSpinner.style.display = 'block';
-    inferLabel.textContent = '推論中...';
-    inferBtn.disabled = true;
+    inferLabel.textContent     = t('btn.inferring');
+    inferBtn.disabled          = true;
     resultPanel.classList.remove('visible');
-    log('發送推論請求...');
-
+    log(t('log.inferSend'));
     const fd = new FormData();
     fd.append('image', imageFile);
-
     try {
-      const res = await fetch(`${API}/predict`, { method: 'POST', body: fd });
+      const res  = await fetch(`${API}/predict`, { method: 'POST', body: fd });
       const data = await res.json();
       if (data.success) {
         showResult(data);
-        log(`推論完成：${data.prediction}（信心度 ${data.confidence}%）`, 'success');
+        log(t('log.inferDone', data.prediction, data.confidence), 'success');
       } else {
-        showInferError('推論失敗：' + data.message);
-        log('推論失敗：' + data.message, 'error');
+        showInferError(t('infer.fail', data.message));
+        log(t('log.inferFail', data.message), 'error');
       }
     } catch (e) {
-      showInferError('連線失敗，請確認伺服器正在運行');
-      log('網路錯誤：' + e.message, 'error');
+      showInferError(t('infer.connFail'));
+      log(t('log.netErr', e.message), 'error');
     }
-
     inferSpinner.style.display = 'none';
-    inferLabel.textContent = '🔥 開始推論';
-    inferBtn.disabled = false;
+    inferLabel.textContent     = t('btn.infer');
+    inferBtn.disabled          = false;
   });
 
   function showResult(data) {
@@ -612,13 +737,11 @@
     const cls   = document.getElementById('result-class');
     const conf  = document.getElementById('result-conf');
     const bars  = document.getElementById('prob-bars');
-
     const isFire = data.prediction === 'fire';
-    card.className = `result-card ${data.prediction}`;
+    card.className    = `result-card ${data.prediction}`;
     emoji.textContent = isFire ? '🔥' : '✅';
-    cls.textContent = isFire ? 'FIRE' : 'NON-FIRE';
-    conf.textContent = `信心度：${data.confidence}%`;
-
+    cls.textContent   = isFire ? 'FIRE' : 'NON-FIRE';
+    conf.textContent  = t('result.conf', data.confidence);
     bars.innerHTML = '';
     Object.entries(data.probabilities).forEach(([name, prob]) => {
       bars.innerHTML += `
@@ -630,15 +753,11 @@
           <div class="prob-value">${prob}%</div>
         </div>`;
     });
-
     resultPanel.classList.add('visible');
-    setTimeout(() => {
-      bars.querySelectorAll('.prob-fill').forEach(el => {
-        el.style.width = el.dataset.target + '%';
-      });
-    }, 50);
+    setTimeout(() => bars.querySelectorAll('.prob-fill').forEach(el => { el.style.width = el.dataset.target + '%'; }), 50);
   }
 
+  // ── Clear ─────────────────────────────────────────────────────────────────
   clearBtn.addEventListener('click', () => {
     imageFile = null;
     imageInput.value = '';
@@ -647,11 +766,19 @@
     resultPanel.classList.remove('visible');
     clearInferError();
     updateInferBtn();
-    log('已清除');
+    log(t('log.cleared'));
   });
 
+  // ── Language toggle ───────────────────────────────────────────────────────
+  document.getElementById('lang-btn').addEventListener('click', () => {
+    lang = lang === 'zh' ? 'en' : 'zh';
+    applyLang();
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
   window.addEventListener('load', () => {
-    log('系統初始化完成，請上傳 best.pt 或點擊「檢查狀態」');
+    applyLang();
+    log(t('log.init'));
   });
 </script>
 </body>
