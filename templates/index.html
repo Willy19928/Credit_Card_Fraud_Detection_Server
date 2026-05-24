@@ -68,17 +68,17 @@
 
   .lang-btn {
     font-family: var(--mono);
-    font-size: 0.68rem;
-    padding: 4px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
+    font-size: 0.72rem;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid #3a3a45;
+    background: #16161b;
+    color: var(--text);
     cursor: pointer;
     transition: all 0.2s;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
   }
-  .lang-btn:hover { border-color: #444; color: var(--text); }
+  .lang-btn:hover { border-color: #55555f; background: #1e1e24; }
 
   .status-badge {
     font-size: 0.7rem;
@@ -509,6 +509,7 @@
     inferLabel.textContent  = t('btn.infer');
 
     localStorage.setItem('lang', lang);
+    renderLog();
   }
 
   // ── App state & elements ──────────────────────────────────────────────────
@@ -536,12 +537,19 @@
   const inferError    = document.getElementById('infer-error');
   const modelCard     = document.getElementById('model-card');
 
-  function log(msg, type = 'info') {
-    const now = new Date().toLocaleTimeString('en-GB', {hour12: false});
-    const line = document.createElement('div');
-    line.className = `log-line ${type}`;
-    line.innerHTML = `<span class="log-time">${now}</span><span class="log-msg">${msg}</span>`;
-    consoleLog.appendChild(line);
+  const logEntries = [];
+  function log(key, type = 'info', ...args) {
+    logEntries.push({ key, type, args, time: new Date().toLocaleTimeString('en-GB', {hour12: false}) });
+    renderLog();
+  }
+  function renderLog() {
+    consoleLog.innerHTML = '';
+    logEntries.forEach(({ key, type, args, time }) => {
+      const line = document.createElement('div');
+      line.className = `log-line ${type}`;
+      line.innerHTML = `<span class="log-time">${time}</span><span class="log-msg">${t(key, ...args)}</span>`;
+      consoleLog.appendChild(line);
+    });
     consoleLog.scrollTop = consoleLog.scrollHeight;
   }
 
@@ -575,18 +583,18 @@
     if (!f) return;
     if (!f.name.endsWith('.pt')) {
       setStatus(t('status.wrongType'), 'error');
-      log(t('log.fileErr'), 'error');
+      log('log.fileErr', 'error');
       modelInput.value = '';
       return;
     }
     if (modelLoaded) {
       setModelLoaded(false);
       resultPanel.classList.remove('visible');
-      log(t('log.newDetected'), 'info');
+      log('log.newDetected', 'info');
     }
     uploadBtn.disabled = false;
     setStatus(t('status.selected', f.name, (f.size / 1024 / 1024).toFixed(2)), 'info');
-    log(t('log.modelSel', f.name));
+    log('log.modelSel', 'info', f.name);
   });
 
   // ── Upload model ──────────────────────────────────────────────────────────
@@ -595,23 +603,23 @@
     if (!f) return;
     setUploadLoading(true);
     setStatus(t('btn.uploading'), 'info');
-    log(t('log.uploadStart'));
+    log('log.uploadStart');
     const fd = new FormData();
     fd.append('model', f);
     try {
       const res  = await fetch(`${API}/upload_model`, { method: 'POST', body: fd });
       const data = await res.json();
       if (data.success) {
-        log(t('log.verifying'), 'info');
+        log('log.verifying', 'info');
         await verifyModelStatus();
       } else {
         setStatus('✗ ' + data.message, 'error');
-        log(t('log.uploadFail', data.message), 'error');
+        log('log.uploadFail', 'error', data.message);
         setModelLoaded(false);
       }
     } catch (e) {
       setStatus(t('status.connFail'), 'error');
-      log(t('log.uploadErr', e.message), 'error');
+      log('log.uploadErr', 'error', e.message);
     }
     setUploadLoading(false);
     uploadBtn.disabled = !modelInput.files[0];
@@ -624,37 +632,37 @@
       const data = await res.json();
       if (data.loaded) {
         setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
-        log(t('log.verifyOk', data.device), 'success');
+        log('log.verifyOk', 'success', data.device);
         setModelLoaded(true);
       } else {
         setStatus(t('status.verifyFail'), 'error');
-        log(t('log.verifyFail'), 'error');
+        log('log.verifyFail', 'error');
         setModelLoaded(false);
       }
     } catch (e) {
       setStatus(t('status.connFail'), 'error');
-      log(t('log.connFail', e.message), 'error');
+      log('log.connFail', 'error', e.message);
       setModelLoaded(false);
     }
   }
 
   checkBtn.addEventListener('click', async () => {
-    log(t('log.checkQuery'));
+    log('log.checkQuery');
     try {
       const res  = await fetch(`${API}/model_status`);
       const data = await res.json();
       if (data.loaded) {
         setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
-        log(t('log.checkReady', data.device), 'success');
+        log('log.checkReady', 'success', data.device);
         setModelLoaded(true);
       } else {
         setStatus(t('status.checkNone'), 'info');
-        log(t('log.checkNone'));
+        log('log.checkNone');
         setModelLoaded(false);
       }
     } catch (e) {
       setStatus(t('status.connFail'), 'error');
-      log(t('log.connFail', e.message), 'error');
+      log('log.connFail', 'error', e.message);
     }
   });
 
@@ -668,7 +676,7 @@
     placeholder.style.display = 'none';
     resultPanel.classList.remove('visible');
     clearInferError();
-    log(t('log.imgSelected', f.name));
+    log('log.imgSelected', 'info', f.name);
     updateInferBtn();
   });
 
@@ -687,7 +695,7 @@
       zone.classList.remove('drag-over', 'drag-reject');
       const file = e.dataTransfer.files[0];
       if (!file) return;
-      if (validateFn && !validateFn(file)) { log(t('log.wrongDrop'), 'error'); return; }
+      if (validateFn && !validateFn(file)) { log('log.wrongDrop', 'error'); return; }
       const dt = new DataTransfer();
       dt.items.add(file);
       input.files = dt.files;
@@ -709,7 +717,7 @@
     inferLabel.textContent     = t('btn.inferring');
     inferBtn.disabled          = true;
     resultPanel.classList.remove('visible');
-    log(t('log.inferSend'));
+    log('log.inferSend');
     const fd = new FormData();
     fd.append('image', imageFile);
     try {
@@ -717,14 +725,14 @@
       const data = await res.json();
       if (data.success) {
         showResult(data);
-        log(t('log.inferDone', data.prediction, data.confidence), 'success');
+        log('log.inferDone', 'success', data.prediction, data.confidence);
       } else {
         showInferError(t('infer.fail', data.message));
-        log(t('log.inferFail', data.message), 'error');
+        log('log.inferFail', 'error', data.message);
       }
     } catch (e) {
       showInferError(t('infer.connFail'));
-      log(t('log.netErr', e.message), 'error');
+      log('log.netErr', 'error', e.message);
     }
     inferSpinner.style.display = 'none';
     inferLabel.textContent     = t('btn.infer');
@@ -766,7 +774,7 @@
     resultPanel.classList.remove('visible');
     clearInferError();
     updateInferBtn();
-    log(t('log.cleared'));
+    log('log.cleared');
   });
 
   // ── Language toggle ───────────────────────────────────────────────────────
@@ -778,7 +786,7 @@
   // ── Init ──────────────────────────────────────────────────────────────────
   window.addEventListener('load', () => {
     applyLang();
-    log(t('log.init'));
+    log('log.init');
   });
 </script>
 </body>
