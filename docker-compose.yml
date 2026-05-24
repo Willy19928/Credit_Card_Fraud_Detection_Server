@@ -1,0 +1,42 @@
+services:
+
+  # ── Flask 推論服務 ─────────────────────────────────────────────────────────
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fire-detection-inference:latest
+    container_name: fire-inference
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # 模型檔案持久化：容器重啟後 best.pt 不會消失
+      - model_storage:/app/models
+    environment:
+      - FLASK_ENV=production
+      - MODEL_PATH=/app/models/best.pt
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5000/model_status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Nginx 反向代理（處理靜態檔、SSL、大檔上傳）────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: fire-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      inference:
+        condition: service_healthy
+
+volumes:
+  model_storage:
+    driver: local
