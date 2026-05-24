@@ -18,63 +18,81 @@ Export best.pt                   POST /predict       (image)   ←  upload & tes
 
 ---
 
-## Plan A — Deploy on Azure VM (Recommended)
+## Plan A — Deploy on Azure VM
 
-Good for sharing with the whole class. Everyone just opens a URL.
+Good for sharing with the whole class — everyone just opens a URL.
 
-### Step 1 — Create the VM
+> **No extra software needed.** Everything runs in your browser through the Azure Portal.
+
+### Step 1 — Create a Virtual Machine
+
+1. Go to [portal.azure.com](https://portal.azure.com) and sign in
+2. Search for **Virtual machines** → click **Create → Azure virtual machine**
+3. Fill in the basics:
+
+   | Field | Value |
+   |-------|-------|
+   | Resource group | Create new → `fire-rg` |
+   | Virtual machine name | `fire-vm` |
+   | Region | East Asia (or wherever is closest) |
+   | Image | **Ubuntu Server 22.04 LTS** |
+   | Size | **Standard_B2s** (2 vCPU, 4 GB RAM) |
+   | Authentication type | Password |
+   | Username | `azureuser` |
+   | Password | set your own |
+
+4. Click **Next: Disks** → leave defaults
+5. Click **Next: Networking** → make sure **Public IP** is set to `(new)`
+6. Click **Review + create** → **Create**
+7. Wait ~2 minutes for deployment to finish
+
+### Step 2 — Open Port 80
+
+1. Go to your new VM → click **Networking** in the left sidebar
+2. Click **Add inbound port rule**
+3. Set **Destination port ranges** to `80`, **Protocol** to `TCP`
+4. Click **Add**
+
+### Step 3 — Connect via Browser (No SSH Client Needed)
+
+1. On your VM page, click **Connect → SSH using Azure CLI**
+2. A terminal opens right in your browser — no PuTTY, no local SSH needed
+
+   > If prompted, click **Configure** to enable the connection, then try again.
+
+### Step 4 — Install Docker and Start the Server
+
+Paste these commands into the browser terminal one by one:
 
 ```bash
-# Log in to Azure
-az login
-
-# Create a resource group
-az group create --name fire-rg --location eastasia
-
-# Create a VM (2 vCPU, 4 GB RAM — enough for CPU inference)
-az vm create \
-  --resource-group fire-rg \
-  --name fire-vm \
-  --image Ubuntu2204 \
-  --size Standard_B2s \
-  --admin-username azureuser \
-  --generate-ssh-keys \
-  --public-ip-sku Standard
-
-# Open port 80
-az vm open-port --resource-group fire-rg --name fire-vm --port 80
-
-# Get the public IP
-az vm show -d --resource-group fire-rg --name fire-vm --query publicIps -o tsv
-```
-
-### Step 2 — Install Docker on the VM
-
-```bash
-# SSH into the VM
-ssh azureuser@<YOUR-VM-IP>
-
 # Install Docker
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 newgrp docker
-```
 
-### Step 3 — Clone and Start
-
-```bash
+# Clone and start
 git clone https://github.com/joe50304/azure_cloud_inference.git
 cd azure_cloud_inference
 docker compose up -d
 ```
 
-First build takes ~5 minutes (downloading PyTorch CPU wheels). Once done, the server is live at `http://<YOUR-VM-IP>`.
+First build takes about 5 minutes (downloading PyTorch). After that, check everything is running:
 
-### Step 4 — Test It
+```bash
+docker compose ps
+```
 
-1. Open `http://<YOUR-VM-IP>` in your browser
-2. Upload your `best.pt` from Colab
-3. Upload a test image and hit **Start Inference**
+Both `fire-inference` and `fire-nginx` should show `healthy` / `running`.
+
+### Step 5 — Get Your Public IP
+
+On the VM overview page in Azure Portal, copy the **Public IP address**. Share `http://<IP>` with the class.
+
+### Step 6 — Test It
+
+1. Open `http://<IP>` in your browser
+2. Upload `best.pt` from Colab (Step 01 on the page)
+3. Upload a test image → hit **Start Inference**
 
 ### Cost Estimate (Azure Student $100 Credits)
 
@@ -85,18 +103,18 @@ First build takes ~5 minutes (downloading PyTorch CPU wheels). Once done, the se
 | Disk | 30 GB OS | ~$2/mo |
 | **Total** | | ~**$36/mo** |
 
-> **Tip:** Run `az vm deallocate --resource-group fire-rg --name fire-vm` when you're done. You only pay for storage (~$2/mo) while it's stopped.
+> **Save credits:** When you're done testing, go to your VM in the Portal → click **Stop**. You only pay for storage (~$2/mo) while it's stopped. Click **Start** to bring it back.
 
 ---
 
 ## Plan B — Run Locally (Windows / Mac)
 
-Use this if you don't have Azure access or just want to test on your own machine.
+Use this if you don't have Azure access, or just want to test on your own machine.
 
 ### Option B-1 — Docker Desktop (Easiest)
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-2. Open a terminal and run:
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and make sure it's running
+2. Open a terminal (PowerShell or Command Prompt on Windows) and run:
 
 ```bash
 git clone https://github.com/joe50304/azure_cloud_inference.git
@@ -108,7 +126,7 @@ docker compose up -d
 
 ### Option B-2 — Plain Python (No Docker)
 
-Use this if Docker Desktop is not available.
+Use this if Docker Desktop isn't available.
 
 ```bash
 git clone https://github.com/joe50304/azure_cloud_inference.git
@@ -130,7 +148,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open `http://localhost:5000` in your browser.
+Open `http://localhost:5000`. Done.
 
 > **Note:** With this option there's no Nginx, so use port `5000` not `80`.
 
