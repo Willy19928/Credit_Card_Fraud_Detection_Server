@@ -15,7 +15,7 @@ CORS(app)
 # 全域設定
 # ─────────────────────────────────────────
 CLASS_NAMES = ['fire', 'non-fire']
-MODEL_PATH = os.environ.get('MODEL_PATH', 'best.pt')  # Docker volume: /app/models/best.pt
+MODEL_PATH = os.environ.get('MODEL_PATH', '/app/models/best.pt')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = None  # 延遲載入
