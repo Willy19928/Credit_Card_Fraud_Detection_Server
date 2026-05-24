@@ -36,9 +36,9 @@ Good for sharing with the whole class — everyone just opens a URL.
    | Virtual machine name | `fire-vm` |
    | Region | East Asia (or wherever is closest) |
    | Image | **Ubuntu Server 22.04 LTS** |
-   | Size | **Standard_B2s** (2 vCPU, 4 GB RAM) |
+   | Size | **Standard_D2s** (2 vCPU, 8 GB RAM) |
    | Authentication type | Password |
-   | Username | `azureuser` |
+   | Username | `ntut` + `Your School IDs` |
    | Password | set your own |
 
 4. Click **Next: Disks** → leave defaults
