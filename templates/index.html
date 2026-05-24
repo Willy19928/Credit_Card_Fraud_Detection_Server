@@ -144,8 +144,6 @@
   .upload-zone {
     border: 1px dashed var(--border);
     border-radius: 8px;
-    padding: 32px 20px;
-    text-align: center;
     cursor: pointer;
     transition: all 0.2s;
     background: transparent;
@@ -159,6 +157,21 @@
     border-color: #ff4444;
     background: rgba(255,68,68,0.05);
   }
+
+  /* Model drop zone: centered text content with consistent height */
+  #model-drop-zone {
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    text-align: center;
+  }
+
+  /* Image drop zone: no extra padding — preview box is the visual container */
+  #image-drop-zone { padding: 4px; }
+
   .upload-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
   .upload-zone h3 { font-family: var(--display); font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
   .upload-zone p { font-size: 0.7rem; color: var(--muted); line-height: 1.5; }
