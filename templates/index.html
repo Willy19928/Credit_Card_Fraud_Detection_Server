@@ -205,6 +205,10 @@
   .btn-ghost:hover:not(:disabled) { border-color: #444; }
   .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-row { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+  .btn-step {
+    font-size: 0.58rem; color: var(--muted);
+    border-right: 1px solid currentColor; padding-right: 8px; opacity: 0.6;
+  }
 
   #model-status-bar {
     margin-top: 16px; padding: 10px 14px; border-radius: 6px;
@@ -326,10 +330,14 @@
 
       <div class="btn-row">
         <button class="btn btn-ghost" id="upload-model-btn" disabled>
+          <span class="btn-step">01</span>
           <div class="spinner dark" id="upload-spinner"></div>
           <span id="upload-label" data-i18n="btn.upload">📤 上傳模型</span>
         </button>
-        <button class="btn btn-ghost" id="check-status-btn" data-i18n="btn.check">🔍 檢查狀態</button>
+        <button class="btn btn-ghost" id="check-status-btn">
+          <span class="btn-step">02</span>
+          <span data-i18n="btn.check">🔍 檢查狀態</span>
+        </button>
       </div>
     </div>
 
@@ -351,6 +359,7 @@
 
       <div class="btn-row">
         <button class="btn btn-primary" id="infer-btn" disabled>
+          <span class="btn-step">03</span>
           <div class="spinner" id="infer-spinner"></div>
           <span id="infer-label" data-i18n="btn.infer">🔥 開始推論</span>
         </button>
