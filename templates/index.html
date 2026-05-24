@@ -427,9 +427,16 @@
       modelInput.value = '';
       return;
     }
+    // Reset model state — new file selected but not yet uploaded.
+    // Prevents inference running against the previously loaded model.
+    if (modelLoaded) {
+      setModelLoaded(false);
+      resultPanel.classList.remove('visible');
+      log('偵測到新模型檔案，請重新上傳以更新', 'info');
+    }
     uploadBtn.disabled = false;
-    setStatus(`已選擇：${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`, 'info');
-    log(`選擇模型檔案：${f.name}`);
+    setStatus(`已選擇：${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)，請點擊「上傳模型」`, 'info');
+    log(`選擇模型：${f.name}`);
   });
 
   uploadBtn.addEventListener('click', async () => {
@@ -447,12 +454,12 @@
       const res = await fetch(`${API}/upload_model`, { method: 'POST', body: fd });
       const data = await res.json();
       if (data.success) {
-        setStatus('✓ ' + data.message, 'success');
-        log('模型載入成功', 'success');
-        setModelLoaded(true);
+        log('檔案上傳完成，正在驗證模型載入狀態...', 'info');
+        // Verify server actually loaded the model before enabling inference.
+        await verifyModelStatus();
       } else {
         setStatus('✗ ' + data.message, 'error');
-        log('模型載入失敗：' + data.message, 'error');
+        log('上傳失敗：' + data.message, 'error');
         setModelLoaded(false);
       }
     } catch (e) {
@@ -463,6 +470,26 @@
     setUploadLoading(false);
     uploadBtn.disabled = !modelInput.files[0];
   });
+
+  async function verifyModelStatus() {
+    try {
+      const res = await fetch(`${API}/model_status`);
+      const data = await res.json();
+      if (data.loaded) {
+        setStatus(`✓ 模型已載入 | 裝置：${data.device} | 類別：${data.classes.join(', ')}`, 'success');
+        log(`模型驗證通過，已就緒 (${data.device})`, 'success');
+        setModelLoaded(true);
+      } else {
+        setStatus('伺服器回報模型未載入，請重新上傳', 'error');
+        log('模型未載入，請重新上傳', 'error');
+        setModelLoaded(false);
+      }
+    } catch (e) {
+      setStatus('✗ 無法連線至伺服器', 'error');
+      log('伺服器連線失敗：' + e.message, 'error');
+      setModelLoaded(false);
+    }
+  }
 
   checkBtn.addEventListener('click', async () => {
     log('查詢伺服器狀態...');
