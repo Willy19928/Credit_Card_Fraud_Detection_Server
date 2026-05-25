@@ -65,7 +65,7 @@ Good for sharing with the whole class — everyone just opens a URL.
 #### Install and Start
 
 ```bash
-sudo apt update && sudo apt install -y python3 python3-venv git
+sudo apt update && sudo apt install -y python3 python3.12-venv git
 
 git clone https://github.com/joe50304/azure_cloud_inference.git
 cd azure_cloud_inference
