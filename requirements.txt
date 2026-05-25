@@ -3,5 +3,5 @@ flask-cors==4.0.1
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 torchvision
-Pillow==10.4.0
+Pillow
 gunicorn==22.0.0
