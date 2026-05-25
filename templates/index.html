@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fire Detection — AI Inference Lab</title>
+<title>Images Classification — AI Inference Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -264,6 +264,13 @@
   .prob-fill.non-fire { background: var(--safe); }
   .prob-value { text-align: right; color: var(--text); }
 
+  .class-badge {
+    display: inline-block; margin-right: 8px; margin-top: 6px;
+    padding: 6px 10px; border-radius: 999px; font-size: 0.72rem;
+    border: 1px solid rgba(255,255,255,0.04); background: rgba(255,255,255,0.02);
+    color: var(--text);
+  }
+
   .spinner {
     width: 16px; height: 16px;
     border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff;
@@ -297,7 +304,7 @@
 <header>
   <div class="logo">
     <div class="logo-dot"></div>
-    FIRE DETECTION LAB
+    Images Classification
   </div>
   <div class="header-right">
     <button class="lang-btn" id="lang-btn">EN</button>
@@ -310,7 +317,7 @@
 
 <main>
   <div class="hero">
-    <h1>AI <span class="fire">Fire</span> Detection<br><span data-i18n="hero.sub">推論測試平台</span></h1>
+    <h1>AI <span class="fire">Images</span> Classification<br><span data-i18n="hero.sub">推論測試平台</span></h1>
     <p>MobileNetV2 · PyTorch · Azure Inference Service</p>
   </div>
 
@@ -327,6 +334,7 @@
       <input type="file" id="model-file-input" accept=".pt">
 
       <div id="model-status-bar"></div>
+      <div id="class-list" style="margin-top:8px"></div>
 
       <div class="btn-row">
         <button class="btn btn-ghost" id="upload-model-btn" disabled>
@@ -361,7 +369,7 @@
         <button class="btn btn-primary" id="infer-btn" disabled>
           <span class="btn-step">03</span>
           <div class="spinner" id="infer-spinner"></div>
-          <span id="infer-label" data-i18n="btn.infer">🔥 開始推論</span>
+          <span id="infer-label" data-i18n="btn.infer">開始推論</span>
         </button>
         <button class="btn btn-ghost" id="clear-btn" data-i18n="btn.clear">清除</button>
       </div>
@@ -450,7 +458,7 @@
       'btn.uploading':   'Uploading...',
       'step2.label':     'Step 02 — Select Test Image',
       'step2.drop':      'Drag or click to upload image<br>JPG / PNG supported',
-      'btn.infer':       '🔥 Run Inference',
+      'btn.infer':       'Run Inference',
       'btn.inferring':   'Running...',
       'btn.clear':       'Clear',
       'result.title':    'Inference Result',
@@ -523,6 +531,34 @@
 
   // ── App state & elements ──────────────────────────────────────────────────
   const API = '';
+  // emoji / color mappings for common labels (extendable)
+  const emojiMap = {
+    'fire': '🔥', 'non-fire': '✅', 'mask': '😷', 'no-mask': '❌', 'maskless': '❌',
+    'dog': '🐶', 'cat': '🐱', 'pig': '🐷', 'duck': '🦆'
+  };
+  const colorMap = {
+    'fire': '#FF4500', 'non-fire': '#00C896', 'mask': '#FFB74D', 'no-mask': '#888888',
+    'dog': '#6C8ED6', 'cat': '#C26BD6', 'pig': '#FF99AA', 'duck': '#FFC107'
+  };
+
+  function hexToRgba(hex, alpha) {
+    if (!hex) return `rgba(128,128,128,${alpha})`;
+    const h = hex.replace('#','');
+    const bigint = parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function renderClassList(classes) {
+    const el = document.getElementById('class-list');
+    if (!classes || classes.length === 0) { el.innerHTML = ''; return; }
+    el.innerHTML = classes.map(c => {
+      const emoji = emojiMap[c] || '🔎';
+      return `<span class="class-badge">${emoji} ${c}</span>`;
+    }).join('');
+  }
   let modelLoaded = false;
   let imageFile   = null;
 
@@ -643,15 +679,18 @@
         setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
         log('log.verifyOk', 'success', data.device);
         setModelLoaded(true);
+        renderClassList(data.classes);
       } else {
         setStatus(t('status.verifyFail'), 'error');
         log('log.verifyFail', 'error');
         setModelLoaded(false);
+        renderClassList([]);
       }
     } catch (e) {
       setStatus(t('status.connFail'), 'error');
       log('log.connFail', 'error', e.message);
       setModelLoaded(false);
+      renderClassList([]);
     }
   }
 
@@ -664,10 +703,12 @@
         setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
         log('log.checkReady', 'success', data.device);
         setModelLoaded(true);
+        renderClassList(data.classes);
       } else {
         setStatus(t('status.checkNone'), 'info');
         log('log.checkNone');
         setModelLoaded(false);
+        renderClassList([]);
       }
     } catch (e) {
       setStatus(t('status.connFail'), 'error');
@@ -754,18 +795,30 @@
     const cls   = document.getElementById('result-class');
     const conf  = document.getElementById('result-conf');
     const bars  = document.getElementById('prob-bars');
-    const isFire = data.prediction === 'fire';
-    card.className    = `result-card ${data.prediction}`;
-    emoji.textContent = isFire ? '🔥' : '✅';
-    cls.textContent   = isFire ? 'FIRE' : 'NON-FIRE';
+    const predLabel = data.prediction || '';
+    // reset
+    card.className = 'result-card';
+    card.style.backgroundColor = '';
+    card.style.borderColor = '';
+    cls.style.color = '';
+
+    const mainColor = colorMap[predLabel] || '#666666';
+    card.style.backgroundColor = hexToRgba(mainColor, 0.06);
+    card.style.borderColor = hexToRgba(mainColor, 0.3);
+    cls.style.color = mainColor;
+
+    emoji.textContent = emojiMap[predLabel] || (predLabel.toLowerCase().includes('fire') ? '🔥' : '🔎');
+    cls.textContent   = predLabel.toUpperCase();
     conf.textContent  = t('result.conf', data.confidence);
+
     bars.innerHTML = '';
     Object.entries(data.probabilities).forEach(([name, prob]) => {
+      const fillColor = colorMap[name] || '#888888';
       bars.innerHTML += `
         <div class="prob-row">
           <div class="prob-name">${name}</div>
           <div class="prob-track">
-            <div class="prob-fill ${name}" style="width:0%" data-target="${prob}"></div>
+            <div class="prob-fill" style="width:0%;background:${fillColor};" data-target="${prob}"></div>
           </div>
           <div class="prob-value">${prob}%</div>
         </div>`;

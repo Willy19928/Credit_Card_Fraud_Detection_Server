@@ -7,18 +7,28 @@ from PIL import Image
 import io
 import os
 import base64
+import json
 
 app = Flask(__name__)
 CORS(app)
 
 # ─────────────────────────────────────────
-# 全域設定
+# 全域設定（類別可從 classes.json 外部化）
 # ─────────────────────────────────────────
-CLASS_NAMES = ['fire', 'non-fire']
-MODEL_PATH = os.environ.get('MODEL_PATH', '/app/models/best.pt')
+CLASSES_FILE = os.environ.get('CLASSES_FILE', 'classes.json')
+try:
+    with open(CLASSES_FILE, 'r', encoding='utf-8') as f:
+        CLASS_NAMES = json.load(f)
+        if not isinstance(CLASS_NAMES, list) or not CLASS_NAMES:
+            raise ValueError('invalid classes file')
+except Exception:
+    CLASS_NAMES = ['fire', 'non-fire']
+
+MODEL_PATH = os.environ.get('MODEL_PATH', 'best.pt')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = None  # 延遲載入
+model_load_error = None
 
 DATA_TRANSFORMS = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -28,17 +38,46 @@ DATA_TRANSFORMS = transforms.Compose([
 
 def load_model():
     """載入模型（若 best.pt 存在）"""
-    global model
+    global model, model_load_error
+    model = None
+    model_load_error = None
     if not os.path.exists(MODEL_PATH):
         return False
-    m = models.mobilenet_v2(weights=None)
-    num_ftrs = m.classifier[1].in_features
-    m.classifier[1] = nn.Linear(num_ftrs, len(CLASS_NAMES))
-    m.load_state_dict(torch.load(MODEL_PATH, map_location=device, weights_only=True))
-    m.to(device)
-    m.eval()
-    model = m
-    return True
+
+    try:
+        checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=True)
+        state_dict = checkpoint
+        if isinstance(checkpoint, dict):
+            for key in ('state_dict', 'model_state_dict', 'model'):
+                if key in checkpoint and isinstance(checkpoint[key], dict):
+                    state_dict = checkpoint[key]
+                    break
+
+        weight_key = 'classifier.1.weight'
+        bias_key = 'classifier.1.bias'
+        if weight_key not in state_dict or bias_key not in state_dict:
+            model_load_error = '模型檔案缺少 classifier.1 權重，無法辨識輸出類別數'
+            return False
+
+        checkpoint_classes = state_dict[weight_key].shape[0]
+        if checkpoint_classes != len(CLASS_NAMES):
+            model_load_error = (
+                f'類別數不一致：classes.json 有 {len(CLASS_NAMES)} 類，'
+                f'但模型輸出為 {checkpoint_classes} 類。請讓 classes.json 與模型訓練類別數一致。'
+            )
+            return False
+
+        m = models.mobilenet_v2(weights=None)
+        num_ftrs = m.classifier[1].in_features
+        m.classifier[1] = nn.Linear(num_ftrs, len(CLASS_NAMES))
+        m.load_state_dict(state_dict)
+        m.to(device)
+        m.eval()
+        model = m
+        return True
+    except Exception as exc:
+        model_load_error = f'模型載入失敗：{exc}'
+        return False
 
 # 啟動時嘗試載入
 load_model()
@@ -61,12 +100,16 @@ def upload_model():
     if not file.filename.endswith('.pt'):
         return jsonify({'success': False, 'message': '請上傳 .pt 格式的模型'}), 400
     
+    target_dir = os.path.dirname(MODEL_PATH)
+    if target_dir:
+        os.makedirs(target_dir, exist_ok=True)
+
     file.save(MODEL_PATH)
     
     if load_model():
         return jsonify({'success': True, 'message': '模型載入成功！'})
     else:
-        return jsonify({'success': False, 'message': '模型載入失敗，請確認格式正確'}), 500
+        return jsonify({'success': False, 'message': model_load_error or '模型載入失敗，請確認格式正確'}), 500
 
 @app.route('/model_status', methods=['GET'])
 def model_status():
@@ -74,14 +117,15 @@ def model_status():
     return jsonify({
         'loaded': model is not None,
         'device': str(device),
-        'classes': CLASS_NAMES
+        'classes': CLASS_NAMES,
+        'error': model_load_error
     })
 
 @app.route('/predict', methods=['POST'])
 def predict():
     """推論端點：接受圖片，回傳預測結果"""
     if model is None:
-        return jsonify({'success': False, 'message': '模型尚未載入，請先上傳 best.pt'}), 400
+        return jsonify({'success': False, 'message': model_load_error or '模型尚未載入，請先上傳 best.pt'}), 400
     
     if 'image' not in request.files:
         return jsonify({'success': False, 'message': '未找到圖片'}), 400
