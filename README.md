@@ -35,7 +35,7 @@ Good for sharing with the whole class — everyone just opens a URL.
    | Resource group | Create new → `fire-rg` |
    | Virtual machine name | `fire-vm` |
    | Region | East Asia (or wherever is closest) |
-   | Image | **Ubuntu Server 22.04 LTS** |
+   | Image | **Ubuntu Server 24.04 LTS** |
    | Size | **Standard_D2s** (2 vCPU, 8 GB RAM) |
    | Authentication type | Password |
    | Username | `ntut` + `Your School IDs` |
@@ -46,59 +46,79 @@ Good for sharing with the whole class — everyone just opens a URL.
 6. Click **Review + create** → **Create**
 7. Wait ~2 minutes for deployment to finish
 
-### Step 2 — Open Port 80
-
-1. Go to your new VM → click **Networking** in the left sidebar
-2. Click **Add inbound port rule**
-3. Set **Destination port ranges** to `80`, **Protocol** to `TCP`
-4. Click **Add**
-
-### Step 3 — Connect via Browser (No SSH Client Needed)
+### Step 2 — Connect via Browser (No SSH Client Needed)
 
 1. On your VM page, click **Connect → SSH using Azure CLI**
 2. A terminal opens right in your browser — no PuTTY, no local SSH needed
 
    > If prompted, click **Configure** to enable the connection, then try again.
 
-### Step 4 — Install Docker and Start the Server
+---
 
-Paste these commands into the browser terminal one by one:
+### Option A-1 — Plain Python (No Docker)
+
+#### Open Port 5000
+
+1. Go to your VM → **Networking** → **Add inbound port rule**
+2. Set port to `5000`, Protocol `TCP` → **Add**
+
+#### Install and Start
 
 ```bash
-# Install Docker
+sudo apt update && sudo apt install -y python3 python3-venv git
+
+git clone https://github.com/joe50304/azure_cloud_inference.git
+cd azure_cloud_inference
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python3 app.py
+```
+
+Access at `http://<IP>:5000`.
+
+---
+
+### Option A-2 — With Docker
+
+#### Open Port 80
+
+1. Go to your VM → **Networking** → **Add inbound port rule**
+2. Set port to `80`, Protocol `TCP` → **Add**
+
+#### Install Docker and Start
+
+```bash
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 newgrp docker
 
-# Clone and start
 git clone https://github.com/joe50304/azure_cloud_inference.git
 cd azure_cloud_inference
 docker compose up -d
 ```
 
-First build takes about 5 minutes (downloading PyTorch). After that, check everything is running:
+First build takes ~5 minutes. Check status:
 
 ```bash
 docker compose ps
 ```
 
-Both `fire-inference` and `fire-nginx` should show `healthy` / `running`.
+`fire-inference` should show `healthy`. Access at `http://<IP>`.
 
-### Step 5 — Get Your Public IP
+---
 
-On the VM overview page in Azure Portal, copy the **Public IP address**. Share `http://<IP>` with the class.
+### Step 3 — Get Your Public IP
 
-### Step 6 — Test It
-
-1. Open `http://<IP>` in your browser
-2. Upload `best.pt` from Colab (Step 01 on the page)
-3. Upload a test image → hit **Start Inference**
+On the VM overview page in Azure Portal, copy the **Public IP address** and share with the class.
 
 ### Cost Estimate (Azure Student $100 Credits)
 
 | Resource | Spec | Est. Cost |
 |----------|------|-----------|
-| VM | Standard_B2s | ~$30/mo |
+| VM | Standard_D2s | ~$30/mo |
 | Public IP | Standard | ~$4/mo |
 | Disk | 30 GB OS | ~$2/mo |
 | **Total** | | ~**$36/mo** |
@@ -141,7 +161,7 @@ python -m venv .venv
 # Mac/Linux:
 source .venv/bin/activate
 
-# Install dependencies (CPU-only PyTorch, ~500 MB)
+# Install dependencies
 pip install -r requirements.txt
 
 # Run the server
@@ -149,8 +169,6 @@ python app.py
 ```
 
 Open `http://localhost:5000`. Done.
-
-> **Note:** With this option there's no Nginx, so use port `5000` not `80`.
 
 ---
 
@@ -185,8 +203,7 @@ azure_cloud_inference/
 │   └── index.html              # Frontend UI
 ├── requirements.txt            # Python dependencies (CPU-only torch)
 ├── Dockerfile                  # Multi-stage build
-├── docker-compose.yml          # Flask + Nginx services
-├── nginx.conf                  # Reverse proxy config
+├── docker-compose.yml          # Flask service
 ├── colab_training_template.py  # Template for the Colab student
 └── .gitignore
 ```
