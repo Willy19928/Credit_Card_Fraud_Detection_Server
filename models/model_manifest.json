@@ -1,0 +1,13 @@
+{
+  "model_name": "Primary NN - Tabular MLP",
+  "architecture": "FraudMLP(96-48-16)",
+  "decision_threshold": 0.9838983416557312,
+  "raw_feature_count": 30,
+  "model_feature_count": 34,
+  "artifact_sha256": {
+    "primary_mlp.pt": "ef7c96f8734926cee45d06620c24127e44f858d19a40c14717b759811ec8f73d",
+    "preprocessing.joblib": "39ae79e0c28f7937c74a9ab03356fac0f01e49d3e3a59f2811ece0dbd420ed9b"
+  },
+  "source_project": "AISec Final - SDG 8 Credit Card Fraud Detection",
+  "intended_use": "Classroom fraud-risk scoring with human review"
+}

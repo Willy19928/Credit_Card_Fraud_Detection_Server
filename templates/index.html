@@ -1,855 +1,549 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Images Classification — AI Inference Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --fire: #FF4500;
-    --fire-amber: #FFA500;
-    --safe: #00C896;
-    --bg: #0A0A0B;
-    --surface: #111114;
-    --border: #222228;
-    --text: #E8E8EC;
-    --muted: #555560;
-    --mono: 'IBM Plex Mono', monospace;
-    --display: 'Syne', sans-serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--mono);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none; z-index: 0;
-  }
-
-  header {
-    border-bottom: 1px solid var(--border);
-    padding: 20px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: relative; z-index: 1;
-  }
-
-  .logo {
-    font-family: var(--display);
-    font-weight: 800;
-    font-size: 1.1rem;
-    letter-spacing: 0.02em;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .logo-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--fire);
-    box-shadow: 0 0 12px var(--fire);
-    animation: pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%,100% { opacity:1; transform: scale(1); }
-    50% { opacity:0.5; transform: scale(0.8); }
-  }
-
-  .header-right { display: flex; align-items: center; gap: 10px; }
-
-  .lang-btn {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    padding: 5px 14px;
-    border-radius: 6px;
-    border: 1px solid #3a3a45;
-    background: #16161b;
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.06em;
-  }
-  .lang-btn:hover { border-color: #55555f; background: #1e1e24; }
-
-  .status-badge {
-    font-size: 0.7rem;
-    padding: 4px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    display: flex; align-items: center; gap: 6px;
-    transition: all 0.3s;
-  }
-  .status-badge.ready { border-color: var(--safe); color: var(--safe); }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-  main {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 50px 40px;
-    position: relative; z-index: 1;
-  }
-
-  .hero { margin-bottom: 60px; }
-  .hero h1 {
-    font-family: var(--display);
-    font-size: clamp(2.2rem, 5vw, 3.8rem);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    margin-bottom: 12px;
-  }
-  .hero h1 span.fire { color: var(--fire); }
-  .hero p { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
-
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-  .grid > .card { min-width: 0; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 28px;
-    transition: border-color 0.2s;
-    position: relative;
-  }
-  .card:hover { border-color: #333340; }
-
-  .card.step-done { border-color: rgba(0,200,150,0.35); }
-  .card.step-done .card-label { color: var(--safe); }
-  .card.step-done .card-label::before { background: var(--safe); }
-  .step-done-badge {
-    display: none;
-    position: absolute;
-    top: 16px; right: 16px;
-    font-size: 0.65rem;
-    color: var(--safe);
-    border: 1px solid rgba(0,200,150,0.4);
-    border-radius: 20px;
-    padding: 2px 10px;
-    letter-spacing: 0.08em;
-  }
-  .card.step-done .step-done-badge { display: block; }
-
-  .card-label {
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    margin-bottom: 20px;
-    display: flex; align-items: center; gap: 8px;
-    transition: color 0.3s;
-  }
-  .card-label::before {
-    content: ''; display: block;
-    width: 16px; height: 1px;
-    background: var(--muted);
-    transition: background 0.3s;
-  }
-
-  .upload-zone {
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: transparent;
-    display: block;
-  }
-  .upload-zone:hover, .upload-zone.drag-over {
-    border-color: var(--fire);
-    background: rgba(255,69,0,0.04);
-  }
-  .upload-zone.drag-reject {
-    border-color: #ff4444;
-    background: rgba(255,68,68,0.05);
-  }
-
-  #model-drop-zone {
-    padding: 32px 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-    text-align: center;
-  }
-
-  #image-drop-zone { padding: 4px; }
-
-  .upload-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
-  .upload-zone h3 { font-family: var(--display); font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
-  .upload-zone p { font-size: 0.7rem; color: var(--muted); line-height: 1.5; }
-
-  input[type="file"] { display: none; }
-
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 10px 16px; border-radius: 6px;
-    font-family: var(--mono); font-size: 0.78rem; font-weight: 500;
-    cursor: pointer; border: 1px solid transparent;
-    transition: all 0.15s; letter-spacing: 0.03em;
-  }
-  .btn-primary { background: var(--fire); color: #fff; border-color: var(--fire); }
-  .btn-primary:hover:not(:disabled) { background: #e03d00; }
-  .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
-  .btn-ghost { background: transparent; color: var(--text); border-color: var(--border); }
-  .btn-ghost:hover:not(:disabled) { border-color: #444; }
-  .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-row { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
-  .btn-step {
-    font-size: 0.58rem; color: var(--muted);
-    border-right: 1px solid currentColor; padding-right: 8px; opacity: 0.6;
-  }
-
-  #model-status-bar {
-    margin-top: 16px; padding: 10px 14px; border-radius: 6px;
-    font-size: 0.72rem; background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border); color: var(--muted);
-    transition: all 0.3s; display: none;
-  }
-  #model-status-bar.success { border-color: var(--safe); color: var(--safe); background: rgba(0,200,150,0.05); display: block; }
-  #model-status-bar.error { border-color: var(--fire); color: #ff7755; background: rgba(255,69,0,0.05); display: block; }
-  #model-status-bar.info { border-color: var(--border); color: var(--muted); display: block; }
-
-  .error-banner {
-    display: none;
-    margin-top: 12px; padding: 10px 14px; border-radius: 6px;
-    font-size: 0.72rem;
-    border: 1px solid rgba(255,68,68,0.4);
-    color: #ff7755;
-    background: rgba(255,68,68,0.06);
-  }
-  .error-banner.visible { display: block; }
-
-  #image-preview-box {
-    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
-    aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center;
-    background: #0d0d10; position: relative;
-  }
-  #image-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-  #image-placeholder { text-align: center; color: var(--muted); font-size: 0.72rem; line-height: 1.8; }
-  #image-placeholder span { font-size: 2rem; display: block; margin-bottom: 8px; }
-
-  #result-panel { display: none; margin-top: 20px; }
-  #result-panel.visible { display: block; }
-
-  .result-card {
-    border-radius: 12px; padding: 30px; border: 1px solid var(--border);
-    display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center;
-  }
-  .result-card.fire { background: rgba(255,69,0,0.06); border-color: rgba(255,69,0,0.3); }
-  .result-card.non-fire { background: rgba(0,200,150,0.06); border-color: rgba(0,200,150,0.3); }
-  .result-emoji { font-size: 3.5rem; line-height: 1; }
-  .result-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 6px; }
-  .result-class { font-family: var(--display); font-size: 2.2rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-  .result-card.fire .result-class { color: var(--fire); }
-  .result-card.non-fire .result-class { color: var(--safe); }
-  .result-conf { font-size: 0.8rem; color: var(--muted); margin-bottom: 16px; }
-
-  .prob-bars { display: flex; flex-direction: column; gap: 8px; }
-  .prob-row { display: grid; grid-template-columns: 80px 1fr 52px; align-items: center; gap: 10px; font-size: 0.7rem; }
-  .prob-name { color: var(--muted); }
-  .prob-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-  .prob-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.16,1,0.3,1); }
-  .prob-fill.fire { background: var(--fire); }
-  .prob-fill.non-fire { background: var(--safe); }
-  .prob-value { text-align: right; color: var(--text); }
-
-  .class-badge {
-    display: inline-block; margin-right: 8px; margin-top: 6px;
-    padding: 6px 10px; border-radius: 999px; font-size: 0.72rem;
-    border: 1px solid rgba(255,255,255,0.04); background: rgba(255,255,255,0.02);
-    color: var(--text);
-  }
-
-  .spinner {
-    width: 16px; height: 16px;
-    border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff;
-    border-radius: 50%; animation: spin 0.6s linear infinite; display: none;
-    flex-shrink: 0;
-  }
-  .spinner.dark { border-color: rgba(0,0,0,0.15); border-top-color: var(--text); }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  #console-log {
-    background: #080809; border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px; font-size: 0.68rem; color: var(--muted);
-    height: 120px; overflow-y: auto; margin-top: 20px; line-height: 1.8;
-  }
-  .log-line { display: flex; gap: 10px; }
-  .log-time { color: #333340; flex-shrink: 0; }
-  .log-line.success .log-msg { color: var(--safe); }
-  .log-line.error .log-msg { color: #ff7755; }
-  .log-line.info .log-msg { color: var(--muted); }
-
-  @media (max-width: 700px) {
-    header { padding: 16px 20px; }
-    main { padding: 30px 20px; }
-    .grid { grid-template-columns: 1fr; }
-    .result-card { grid-template-columns: 1fr; text-align: center; }
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fraud Review Console</title>
+  <style>
+    :root {
+      --bg: #f4f7f8;
+      --surface: #fff;
+      --soft: #eef3f4;
+      --border: #d7e0e3;
+      --border-strong: #b7c4c8;
+      --text: #162126;
+      --muted: #617178;
+      --accent: #087e8b;
+      --accent-dark: #075f68;
+      --safe: #137547;
+      --safe-soft: #e6f4ec;
+      --risk: #bc3f32;
+      --risk-soft: #faeae8;
+      --shadow: 0 12px 30px rgba(24, 46, 54, 0.08);
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    button, input, textarea { font: inherit; letter-spacing: 0; }
+    .topbar {
+      min-height: 64px;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .brand, .top-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border: 2px solid var(--accent);
+      position: relative;
+      flex: 0 0 auto;
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      right: 4px;
+      top: 4px;
+      background: var(--risk);
+    }
+    .brand-name { font-size: 0.96rem; font-weight: 760; white-space: nowrap; }
+    .brand-context {
+      color: var(--muted);
+      font-size: 0.76rem;
+      border-left: 1px solid var(--border);
+      padding-left: 10px;
+      white-space: nowrap;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #9a6411; }
+    .status.ready .status-dot { background: var(--safe); }
+    .status.error .status-dot { background: var(--risk); }
+    main { width: min(1440px, 100%); margin: 0 auto; padding: 28px; }
+    .page-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+    h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; font-weight: 790; }
+    .meta-strip { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    .meta-item {
+      display: grid;
+      gap: 2px;
+      min-width: 118px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .meta-label, .section-label {
+      color: var(--muted);
+      font-size: 0.62rem;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+    .meta-value { font-size: 0.76rem; font-weight: 680; overflow-wrap: anywhere; }
+    .mode-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      margin-bottom: 16px;
+    }
+    .segmented {
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--border-strong);
+      background: var(--soft);
+    }
+    .segmented button, .button {
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 0.76rem;
+      font-weight: 680;
+    }
+    .segmented button { min-width: 140px; border: 0; background: transparent; }
+    .segmented button.active { background: var(--text); color: #fff; }
+    .button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-dark); }
+    .button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .button.primary:hover:not(:disabled) { background: var(--accent-dark); color: #fff; }
+    .button:disabled { cursor: not-allowed; opacity: 0.45; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    input[type="file"] { display: none; }
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      align-items: start;
+    }
+    .panel { border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+    .panel-header {
+      min-height: 48px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .panel-title { margin: 0; font-size: 0.85rem; font-weight: 760; }
+    .panel-caption { color: var(--muted); font-size: 0.68rem; }
+    .panel-body { padding: 16px; }
+    .field-section + .field-section { margin-top: 20px; }
+    .section-label { margin: 0 0 10px; }
+    .basic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .feature-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .field { display: grid; gap: 5px; min-width: 0; }
+    .field label { color: var(--muted); font-size: 0.67rem; font-weight: 680; }
+    .field input {
+      width: 100%;
+      min-width: 0;
+      height: 36px;
+      border: 1px solid var(--border);
+      background: #fbfcfc;
+      color: var(--text);
+      padding: 7px 8px;
+      outline: none;
+      font-size: 0.73rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .field input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(8,126,139,.12); }
+    .result-panel { position: sticky; top: 16px; }
+    .decision {
+      min-height: 122px;
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      align-content: center;
+      gap: 6px;
+      background: var(--soft);
+    }
+    .decision.safe { background: var(--safe-soft); }
+    .decision.risk { background: var(--risk-soft); }
+    .decision-label { color: var(--muted); font-size: 0.64rem; font-weight: 750; text-transform: uppercase; }
+    .decision-value { font-size: 1.6rem; line-height: 1.1; font-weight: 800; }
+    .decision.safe .decision-value { color: var(--safe); }
+    .decision.risk .decision-value { color: var(--risk); }
+    .decision-note { color: var(--muted); font-size: 0.7rem; }
+    .score-block { padding: 18px; display: grid; gap: 16px; }
+    .score-header { display: flex; justify-content: space-between; gap: 10px; align-items: end; }
+    .score-value { font-size: 2rem; line-height: 1; font-weight: 820; font-variant-numeric: tabular-nums; }
+    .score-unit { color: var(--muted); font-size: 0.7rem; }
+    .meter { height: 10px; background: var(--soft); border: 1px solid var(--border); overflow: hidden; }
+    .meter-fill { height: 100%; width: 0; background: var(--accent); transition: width 350ms ease; }
+    .meter-fill.risk { background: var(--risk); }
+    .threshold-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 0.67rem; }
+    .placeholder { min-height: 260px; display: grid; place-items: center; color: var(--muted); font-size: 0.76rem; }
+    .tag { display: inline-block; padding: 3px 7px; font-weight: 740; }
+    .tag.safe { color: var(--safe); background: var(--safe-soft); }
+    .tag.risk { color: var(--risk); background: var(--risk-soft); }
+    .message {
+      display: none;
+      margin-top: 12px;
+      border: 1px solid var(--risk);
+      background: var(--risk-soft);
+      color: var(--risk);
+      padding: 10px 12px;
+      font-size: 0.72rem;
+      overflow-wrap: anywhere;
+    }
+    .message.visible { display: block; }
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 5;
+      width: min(380px, calc(100vw - 40px));
+      padding: 12px 14px;
+      border: 1px solid var(--safe);
+      background: var(--safe-soft);
+      color: var(--safe);
+      box-shadow: var(--shadow);
+      font-size: 0.74rem;
+      display: none;
+    }
+    .toast.visible { display: block; }
+    .toast.error { border-color: var(--risk); background: var(--risk-soft); color: var(--risk); }
+    .batch-panel { display: none; }
+    .batch-panel.active { display: block; }
+    .single-panel.hidden { display: none; }
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      background: #fbfcfc;
+      color: var(--text);
+      padding: 12px;
+      outline: none;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.71rem;
+      line-height: 1.5;
+    }
+    .batch-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    .table-wrap { overflow-x: auto; border-top: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { color: var(--muted); background: var(--soft); font-size: 0.62rem; text-transform: uppercase; }
+    @media (max-width: 1000px) {
+      .workspace { grid-template-columns: 1fr; }
+      .result-panel { position: static; }
+      .feature-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 680px) {
+      .topbar, main { padding-left: 16px; padding-right: 16px; }
+      .topbar { align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
+      .top-actions { align-items: flex-end; flex-direction: column-reverse; }
+      .brand-context { display: none; }
+      .page-heading, .mode-row { align-items: stretch; flex-direction: column; }
+      .meta-strip { justify-content: flex-start; }
+      .segmented { width: 100%; }
+      .segmented button { min-width: 0; }
+      .actions .button { flex: 1 1 auto; }
+      .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .basic-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-
-<header>
-  <div class="logo">
-    <div class="logo-dot"></div>
-    Images Classification
-  </div>
-  <div class="header-right">
-    <button class="lang-btn" id="lang-btn">EN</button>
-    <div class="status-badge" id="global-status">
-      <div class="status-dot"></div>
-      <span id="global-status-text" data-i18n="status.waiting">等待模型載入</span>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <span class="brand-name">Fraud Review Console</span>
+      <span class="brand-context">AISec Final</span>
     </div>
-  </div>
-</header>
+    <div class="top-actions">
+      <label class="button" for="model-file" id="upload-model-label">Upload model</label>
+      <input id="model-file" type="file" accept=".pt">
+      <div class="status" id="service-status">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="service-status-text">Connecting</span>
+      </div>
+    </div>
+  </header>
 
-<main>
-  <div class="hero">
-    <h1>AI <span class="fire">Images</span> Classification<br><span data-i18n="hero.sub">推論測試平台</span></h1>
-    <p>MobileNetV2 · PyTorch · Azure Inference Service</p>
-  </div>
-
-  <div class="grid">
-    <div class="card" id="model-card">
-      <div class="step-done-badge" data-i18n="badge.ready">✓ 已就緒</div>
-      <div class="card-label" data-i18n="step1.label">Step 01 — 上傳模型</div>
-
-      <label class="upload-zone" id="model-drop-zone" for="model-file-input">
-        <span class="upload-icon">⚙️</span>
-        <h3 data-i18n="step1.title">拖曳或點擊上傳 best.pt</h3>
-        <p data-i18n="step1.desc" data-i18n-html>從 Google Colab 訓練完成後<br>導出的 MobileNetV2 權重檔案</p>
-      </label>
-      <input type="file" id="model-file-input" accept=".pt">
-
-      <div id="model-status-bar"></div>
-      <div id="class-list" style="margin-top:8px"></div>
-
-      <div class="btn-row">
-        <button class="btn btn-ghost" id="upload-model-btn" disabled>
-          <span class="btn-step">01</span>
-          <div class="spinner dark" id="upload-spinner"></div>
-          <span id="upload-label" data-i18n="btn.upload">📤 上傳模型</span>
-        </button>
-        <button class="btn btn-ghost" id="check-status-btn">
-          <span class="btn-step">02</span>
-          <span data-i18n="btn.check">🔍 檢查狀態</span>
-        </button>
+  <main>
+    <div class="page-heading">
+      <h1>Credit Card Transaction Scoring</h1>
+      <div class="meta-strip">
+        <div class="meta-item"><span class="meta-label">Architecture</span><span class="meta-value" id="model-architecture">-</span></div>
+        <div class="meta-item"><span class="meta-label">Decision Threshold</span><span class="meta-value" id="model-threshold">-</span></div>
+        <div class="meta-item"><span class="meta-label">Device</span><span class="meta-value" id="model-device">-</span></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-label" data-i18n="step2.label">Step 02 — 選擇測試圖片</div>
+    <div class="mode-row">
+      <div class="segmented" aria-label="Inference mode">
+        <button class="active" id="single-mode-button" type="button">Single transaction</button>
+        <button id="batch-mode-button" type="button">Batch JSON</button>
+      </div>
+      <div class="actions" id="single-actions">
+        <button class="button" id="load-normal-button" type="button">Load normal sample</button>
+        <button class="button" id="load-fraud-button" type="button">Load fraud sample</button>
+        <button class="button" id="clear-button" type="button">Clear</button>
+        <button class="button primary" id="score-button" type="button" disabled>Run inference</button>
+      </div>
+    </div>
 
-      <label class="upload-zone" id="image-drop-zone" for="image-file-input">
-        <div id="image-preview-box">
-          <div id="image-placeholder">
-            <span>🖼️</span>
-            <span data-i18n="step2.drop" data-i18n-html>拖曳或點擊上傳圖片<br>支援 JPG / PNG</span>
+    <section class="single-panel" id="single-panel">
+      <div class="workspace">
+        <form class="panel" id="transaction-form">
+          <div class="panel-header"><h2 class="panel-title">Transaction Features</h2><span class="panel-caption">30 raw inputs</span></div>
+          <div class="panel-body">
+            <div class="field-section"><p class="section-label">Transaction</p><div class="basic-grid" id="basic-fields"></div></div>
+            <div class="field-section"><p class="section-label">Anonymized PCA Features</p><div class="feature-grid" id="pca-fields"></div></div>
+            <div class="message" id="single-error" role="alert"></div>
           </div>
-          <img id="preview-img" style="display:none" alt="preview">
+        </form>
+        <aside class="panel result-panel">
+          <div class="panel-header"><h2 class="panel-title">Review Decision</h2><span class="panel-caption" id="result-state">Not scored</span></div>
+          <div id="result-placeholder" class="placeholder">No inference result</div>
+          <div id="result-content" hidden>
+            <div class="decision" id="decision">
+              <span class="decision-label">Routing</span>
+              <strong class="decision-value" id="decision-value">-</strong>
+              <span class="decision-note" id="decision-note">-</span>
+            </div>
+            <div class="score-block">
+              <div class="score-header">
+                <div><div class="score-value" id="score-value">0.0000%</div><div class="score-unit">Fraud probability</div></div>
+                <span class="tag" id="prediction-tag">-</span>
+              </div>
+              <div class="meter" aria-label="Fraud probability"><div class="meter-fill" id="score-meter"></div></div>
+              <div class="threshold-row"><span>0%</span><span id="threshold-label">Threshold -</span><span>100%</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="panel batch-panel" id="batch-panel">
+      <div class="panel-header"><h2 class="panel-title">Batch Inference</h2><span class="panel-caption" id="batch-limit">Maximum 1000 transactions</span></div>
+      <div class="panel-body">
+        <textarea id="batch-input" spellcheck="false" aria-label="Batch JSON"></textarea>
+        <div class="message" id="batch-error" role="alert"></div>
+        <div class="batch-actions">
+          <button class="button" id="batch-example-button" type="button">Load samples</button>
+          <button class="button primary" id="batch-score-button" type="button" disabled>Run batch inference</button>
         </div>
-      </label>
-      <input type="file" id="image-file-input" accept="image/*">
-
-      <div id="infer-error" class="error-banner" role="alert"></div>
-
-      <div class="btn-row">
-        <button class="btn btn-primary" id="infer-btn" disabled>
-          <span class="btn-step">03</span>
-          <div class="spinner" id="infer-spinner"></div>
-          <span id="infer-label" data-i18n="btn.infer">開始推論</span>
-        </button>
-        <button class="btn btn-ghost" id="clear-btn" data-i18n="btn.clear">清除</button>
       </div>
-    </div>
-  </div>
-
-  <div id="result-panel" role="region">
-    <div class="card-label" data-i18n="result.title">推論結果</div>
-    <div class="result-card" id="result-card">
-      <div class="result-emoji" id="result-emoji">—</div>
-      <div>
-        <div class="result-label" data-i18n="result.classLabel">預測類別</div>
-        <div class="result-class" id="result-class">—</div>
-        <div class="result-conf" id="result-conf">—</div>
-        <div class="prob-bars" id="prob-bars"></div>
+      <div class="table-wrap" id="batch-results" hidden>
+        <table>
+          <thead><tr><th>Index</th><th>Prediction</th><th>Fraud probability</th><th>Threshold</th><th>Routing</th></tr></thead>
+          <tbody id="batch-results-body"></tbody>
+        </table>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
 
-  <div id="console-log" role="log"></div>
-</main>
+  <script>
+    const state = { schema: null, modelReady: false, samples: [] };
+    const $ = (id) => document.getElementById(id);
 
-<script>
-  // ── i18n ──────────────────────────────────────────────────────────────────
-  const I18N = {
-    zh: {
-      'status.waiting':  '等待模型載入',
-      'status.ready':    '模型已就緒',
-      'hero.sub':        '推論測試平台',
-      'badge.ready':     '✓ 已就緒',
-      'step1.label':     'Step 01 — 上傳模型',
-      'step1.title':     '拖曳或點擊上傳 best.pt',
-      'step1.desc':      '從 Google Colab 訓練完成後<br>導出的 MobileNetV2 權重檔案',
-      'btn.upload':      '📤 上傳模型',
-      'btn.check':       '🔍 檢查狀態',
-      'btn.uploading':   '上傳中...',
-      'step2.label':     'Step 02 — 選擇測試圖片',
-      'step2.drop':      '拖曳或點擊上傳圖片<br>支援 JPG / PNG',
-      'btn.infer':       '🔥 開始推論',
-      'btn.inferring':   '推論中...',
-      'btn.clear':       '清除',
-      'result.title':    '推論結果',
-      'result.classLabel': '預測類別',
-      // dynamic — functions receive variables
-      'log.init':        '系統初始化完成，請上傳 best.pt 或點擊「檢查狀態」',
-      'log.cleared':     '已清除',
-      'log.imgSelected': name => `已選擇圖片：${name}`,
-      'log.wrongDrop':   '拖入的檔案格式不符',
-      'log.fileErr':     '檔案格式錯誤，需要 .pt 檔案',
-      'log.newDetected': '偵測到新模型檔案，請重新上傳以更新',
-      'log.modelSel':    name => `選擇模型：${name}`,
-      'log.uploadStart': '開始上傳模型...',
-      'log.verifying':   '檔案上傳完成，正在驗證模型載入狀態...',
-      'log.uploadFail':  msg => `上傳失敗：${msg}`,
-      'log.uploadErr':   msg => `上傳錯誤：${msg}`,
-      'log.verifyOk':    dev => `模型驗證通過，已就緒 (${dev})`,
-      'log.verifyFail':  '模型未載入，請重新上傳',
-      'log.connFail':    msg => `伺服器連線失敗：${msg}`,
-      'log.checkQuery':  '查詢伺服器狀態...',
-      'log.checkReady':  dev => `模型已就緒 (${dev})`,
-      'log.checkNone':   '伺服器尚未載入模型',
-      'log.inferSend':   '發送推論請求...',
-      'log.inferDone':   (pred, conf) => `推論完成：${pred}（信心度 ${conf}%）`,
-      'log.inferFail':   msg => `推論失敗：${msg}`,
-      'log.netErr':      msg => `網路錯誤：${msg}`,
-      'status.selected': (name, size) => `已選擇：${name} (${size} MB)，請點擊「上傳模型」`,
-      'status.wrongType':'✗ 請選擇 .pt 格式的模型檔案',
-      'status.loaded':   (dev, cls) => `✓ 模型已載入 | 裝置：${dev} | 類別：${cls}`,
-      'status.verifyFail':'伺服器回報模型未載入，請重新上傳',
-      'status.connFail': '✗ 無法連線至伺服器',
-      'status.checkNone':'模型尚未載入，請上傳 best.pt',
-      'infer.fail':      msg => `推論失敗：${msg}`,
-      'infer.connFail':  '連線失敗，請確認伺服器正在運行',
-      'result.conf':     val => `信心度：${val}%`,
-    },
-    en: {
-      'status.waiting':  'Waiting for model',
-      'status.ready':    'Model ready',
-      'hero.sub':        'Inference Platform',
-      'badge.ready':     '✓ Ready',
-      'step1.label':     'Step 01 — Upload Model',
-      'step1.title':     'Drag or click to upload best.pt',
-      'step1.desc':      'Export MobileNetV2 weights<br>from your Google Colab training',
-      'btn.upload':      '📤 Upload Model',
-      'btn.check':       '🔍 Check Status',
-      'btn.uploading':   'Uploading...',
-      'step2.label':     'Step 02 — Select Test Image',
-      'step2.drop':      'Drag or click to upload image<br>JPG / PNG supported',
-      'btn.infer':       'Run Inference',
-      'btn.inferring':   'Running...',
-      'btn.clear':       'Clear',
-      'result.title':    'Inference Result',
-      'result.classLabel': 'Predicted Class',
-      'log.init':        'Ready — upload best.pt or click Check Status',
-      'log.cleared':     'Cleared',
-      'log.imgSelected': name => `Image selected: ${name}`,
-      'log.wrongDrop':   'Invalid file type dropped',
-      'log.fileErr':     'Invalid file type, need .pt file',
-      'log.newDetected': 'New model file detected — please re-upload',
-      'log.modelSel':    name => `Model selected: ${name}`,
-      'log.uploadStart': 'Starting model upload...',
-      'log.verifying':   'Upload complete, verifying model...',
-      'log.uploadFail':  msg => `Upload failed: ${msg}`,
-      'log.uploadErr':   msg => `Upload error: ${msg}`,
-      'log.verifyOk':    dev => `Model verified, ready (${dev})`,
-      'log.verifyFail':  'Model not loaded — please re-upload',
-      'log.connFail':    msg => `Connection failed: ${msg}`,
-      'log.checkQuery':  'Checking server status...',
-      'log.checkReady':  dev => `Model ready (${dev})`,
-      'log.checkNone':   'Server has no model loaded',
-      'log.inferSend':   'Sending inference request...',
-      'log.inferDone':   (pred, conf) => `Done: ${pred} (confidence ${conf}%)`,
-      'log.inferFail':   msg => `Inference failed: ${msg}`,
-      'log.netErr':      msg => `Network error: ${msg}`,
-      'status.selected': (name, size) => `Selected: ${name} (${size} MB) — click Upload Model`,
-      'status.wrongType':'✗ Please select a .pt model file',
-      'status.loaded':   (dev, cls) => `✓ Model loaded | Device: ${dev} | Classes: ${cls}`,
-      'status.verifyFail':'Server reports model not loaded — re-upload required',
-      'status.connFail': '✗ Cannot connect to server',
-      'status.checkNone':'Model not loaded — please upload best.pt',
-      'infer.fail':      msg => `Inference failed: ${msg}`,
-      'infer.connFail':  'Connection failed — check server is running',
-      'result.conf':     val => `Confidence: ${val}%`,
+    function setMessage(id, message = "") {
+      const element = $(id);
+      element.textContent = message;
+      element.classList.toggle("visible", Boolean(message));
     }
-  };
-
-  let lang = localStorage.getItem('lang') || 'zh';
-
-  function t(key, ...args) {
-    const val = I18N[lang][key];
-    if (val === undefined) return key;
-    return typeof val === 'function' ? val(...args) : val;
-  }
-
-  function applyLang() {
-    document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
-    document.getElementById('lang-btn').textContent = lang === 'zh' ? 'EN' : '中文';
-
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.dataset.i18n;
-      const raw = I18N[lang][key];
-      if (raw === undefined) return;
-      const str = typeof raw === 'function' ? raw() : raw;
-      if ('i18nHtml' in el.dataset) {
-        el.innerHTML = str;
-      } else {
-        el.textContent = str;
+    function toast(message, error = false) {
+      const element = $("toast");
+      element.textContent = message;
+      element.className = `toast visible ${error ? "error" : ""}`;
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => { element.className = "toast"; }, 4500);
+    }
+    function setBusy(button, busy, label) {
+      button.disabled = busy || !state.modelReady;
+      button.textContent = busy ? "Running..." : label;
+    }
+    function createInput(column) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "field";
+      const label = document.createElement("label");
+      label.htmlFor = `field-${column}`;
+      label.textContent = column;
+      const input = document.createElement("input");
+      input.id = `field-${column}`;
+      input.type = "number";
+      input.step = "any";
+      input.required = true;
+      input.autocomplete = "off";
+      wrapper.append(label, input);
+      return wrapper;
+    }
+    function buildFields(columns) {
+      $("basic-fields").replaceChildren(...["Time", "Amount"].map(createInput));
+      $("pca-fields").replaceChildren(...columns.filter((column) => column.startsWith("V")).map(createInput));
+    }
+    function fillTransaction(transaction) {
+      state.schema.input_columns.forEach((column) => { $(`field-${column}`).value = transaction[column] ?? ""; });
+      resetResult();
+      setMessage("single-error");
+    }
+    function readTransaction() {
+      const transaction = {};
+      for (const column of state.schema.input_columns) {
+        const input = $(`field-${column}`);
+        if (input.value.trim() === "") throw new Error(`${column} is required`);
+        const value = Number(input.value);
+        if (!Number.isFinite(value)) throw new Error(`${column} must be numeric`);
+        transaction[column] = value;
       }
-    });
-
-    // Re-apply dynamic state text
-    globalText.textContent = t(modelLoaded ? 'status.ready' : 'status.waiting');
-    uploadLabel.textContent = t('btn.upload');
-    inferLabel.textContent  = t('btn.infer');
-
-    localStorage.setItem('lang', lang);
-    renderLog();
-  }
-
-  // ── App state & elements ──────────────────────────────────────────────────
-  const API = '';
-  // emoji / color mappings for common labels (extendable)
-  const emojiMap = {
-    'fire': '🔥', 'non-fire': '✅', 'mask': '😷', 'no-mask': '❌', 'maskless': '❌',
-    'dog': '🐶', 'cat': '🐱', 'pig': '🐷', 'duck': '🦆'
-  };
-  const colorMap = {
-    'fire': '#FF4500', 'non-fire': '#00C896', 'mask': '#FFB74D', 'no-mask': '#888888',
-    'dog': '#6C8ED6', 'cat': '#C26BD6', 'pig': '#FF99AA', 'duck': '#FFC107'
-  };
-
-  function hexToRgba(hex, alpha) {
-    if (!hex) return `rgba(128,128,128,${alpha})`;
-    const h = hex.replace('#','');
-    const bigint = parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-
-  function renderClassList(classes) {
-    const el = document.getElementById('class-list');
-    if (!classes || classes.length === 0) { el.innerHTML = ''; return; }
-    el.innerHTML = classes.map(c => {
-      const emoji = emojiMap[c] || '🔎';
-      return `<span class="class-badge">${emoji} ${c}</span>`;
-    }).join('');
-  }
-  let modelLoaded = false;
-  let imageFile   = null;
-
-  const modelInput    = document.getElementById('model-file-input');
-  const imageInput    = document.getElementById('image-file-input');
-  const uploadBtn     = document.getElementById('upload-model-btn');
-  const uploadSpinner = document.getElementById('upload-spinner');
-  const uploadLabel   = document.getElementById('upload-label');
-  const checkBtn      = document.getElementById('check-status-btn');
-  const inferBtn      = document.getElementById('infer-btn');
-  const clearBtn      = document.getElementById('clear-btn');
-  const statusBar     = document.getElementById('model-status-bar');
-  const globalBadge   = document.getElementById('global-status');
-  const globalText    = document.getElementById('global-status-text');
-  const previewImg    = document.getElementById('preview-img');
-  const placeholder   = document.getElementById('image-placeholder');
-  const resultPanel   = document.getElementById('result-panel');
-  const inferSpinner  = document.getElementById('infer-spinner');
-  const inferLabel    = document.getElementById('infer-label');
-  const consoleLog    = document.getElementById('console-log');
-  const inferError    = document.getElementById('infer-error');
-  const modelCard     = document.getElementById('model-card');
-
-  const logEntries = [];
-  function log(key, type = 'info', ...args) {
-    logEntries.push({ key, type, args, time: new Date().toLocaleTimeString('en-GB', {hour12: false}) });
-    renderLog();
-  }
-  function renderLog() {
-    consoleLog.innerHTML = '';
-    logEntries.forEach(({ key, type, args, time }) => {
-      const line = document.createElement('div');
-      line.className = `log-line ${type}`;
-      line.innerHTML = `<span class="log-time">${time}</span><span class="log-msg">${t(key, ...args)}</span>`;
-      consoleLog.appendChild(line);
-    });
-    consoleLog.scrollTop = consoleLog.scrollHeight;
-  }
-
-  function setStatus(msg, type) { statusBar.textContent = msg; statusBar.className = type; }
-
-  function showInferError(msg) { inferError.textContent = msg; inferError.classList.add('visible'); }
-  function clearInferError()   { inferError.textContent = ''; inferError.classList.remove('visible'); }
-
-  function setModelLoaded(ready) {
-    modelLoaded = ready;
-    globalBadge.className  = ready ? 'status-badge ready' : 'status-badge';
-    globalText.textContent = t(ready ? 'status.ready' : 'status.waiting');
-    modelCard.classList.toggle('step-done', ready);
-    updateInferBtn();
-  }
-
-  function updateInferBtn() {
-    inferBtn.disabled = !(modelLoaded && imageFile);
-  }
-
-  function setUploadLoading(loading) {
-    uploadBtn.disabled    = loading;
-    checkBtn.disabled     = loading;
-    uploadSpinner.style.display = loading ? 'block' : 'none';
-    uploadLabel.textContent     = loading ? t('btn.uploading') : t('btn.upload');
-  }
-
-  // ── Model file select ─────────────────────────────────────────────────────
-  modelInput.addEventListener('change', () => {
-    const f = modelInput.files[0];
-    if (!f) return;
-    if (!f.name.endsWith('.pt')) {
-      setStatus(t('status.wrongType'), 'error');
-      log('log.fileErr', 'error');
-      modelInput.value = '';
-      return;
+      return transaction;
     }
-    if (modelLoaded) {
-      setModelLoaded(false);
-      resultPanel.classList.remove('visible');
-      log('log.newDetected', 'info');
+    function clearTransaction() {
+      state.schema.input_columns.forEach((column) => { $(`field-${column}`).value = ""; });
+      resetResult();
+      setMessage("single-error");
     }
-    uploadBtn.disabled = false;
-    setStatus(t('status.selected', f.name, (f.size / 1024 / 1024).toFixed(2)), 'info');
-    log('log.modelSel', 'info', f.name);
-  });
-
-  // ── Upload model ──────────────────────────────────────────────────────────
-  uploadBtn.addEventListener('click', async () => {
-    const f = modelInput.files[0];
-    if (!f) return;
-    setUploadLoading(true);
-    setStatus(t('btn.uploading'), 'info');
-    log('log.uploadStart');
-    const fd = new FormData();
-    fd.append('model', f);
-    try {
-      const res  = await fetch(`${API}/upload_model`, { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.success) {
-        log('log.verifying', 'info');
-        await verifyModelStatus();
-      } else {
-        setStatus('✗ ' + data.message, 'error');
-        log('log.uploadFail', 'error', data.message);
-        setModelLoaded(false);
+    function resetResult() {
+      $("result-placeholder").hidden = false;
+      $("result-content").hidden = true;
+      $("result-state").textContent = "Not scored";
+    }
+    function showResult(result) {
+      const risk = result.requires_human_review;
+      $("result-placeholder").hidden = true;
+      $("result-content").hidden = false;
+      $("result-state").textContent = "Scored";
+      $("decision").className = `decision ${risk ? "risk" : "safe"}`;
+      $("decision-value").textContent = risk ? "Human review" : "Normal flow";
+      $("decision-note").textContent = risk ? "Fraud score reached the review threshold." : "Fraud score remained below the review threshold.";
+      $("score-value").textContent = `${result.fraud_probability_percent.toFixed(4)}%`;
+      $("prediction-tag").className = `tag ${risk ? "risk" : "safe"}`;
+      $("prediction-tag").textContent = result.prediction.toUpperCase();
+      $("score-meter").className = `meter-fill ${risk ? "risk" : ""}`;
+      $("score-meter").style.width = `${Math.min(result.fraud_probability_percent, 100)}%`;
+      $("threshold-label").textContent = `Threshold ${(result.threshold * 100).toFixed(4)}%`;
+    }
+    async function postPrediction(payload) {
+      const response = await fetch("/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Inference failed");
+      return data;
+    }
+    async function scoreSingle() {
+      setMessage("single-error");
+      setBusy($("score-button"), true, "Run inference");
+      try { showResult((await postPrediction(readTransaction())).predictions[0]); }
+      catch (error) { setMessage("single-error", error.message); }
+      finally { setBusy($("score-button"), false, "Run inference"); }
+    }
+    function showBatchResults(predictions) {
+      $("batch-results-body").innerHTML = predictions.map((result) => {
+        const risk = result.requires_human_review;
+        return `<tr><td>${result.index}</td><td><span class="tag ${risk ? "risk" : "safe"}">${result.prediction.toUpperCase()}</span></td><td>${result.fraud_probability_percent.toFixed(4)}%</td><td>${(result.threshold * 100).toFixed(4)}%</td><td>${risk ? "Human review" : "Normal flow"}</td></tr>`;
+      }).join("");
+      $("batch-results").hidden = false;
+    }
+    async function scoreBatch() {
+      setMessage("batch-error");
+      setBusy($("batch-score-button"), true, "Run batch inference");
+      try { showBatchResults((await postPrediction(JSON.parse($("batch-input").value))).predictions); }
+      catch (error) { setMessage("batch-error", error.message); $("batch-results").hidden = true; }
+      finally { setBusy($("batch-score-button"), false, "Run batch inference"); }
+    }
+    function loadBatchSamples() {
+      $("batch-input").value = JSON.stringify({ transactions: state.samples.map((sample) => sample.transaction) }, null, 2);
+      $("batch-results").hidden = true;
+      setMessage("batch-error");
+    }
+    function setMode(mode) {
+      const batch = mode === "batch";
+      $("single-mode-button").classList.toggle("active", !batch);
+      $("batch-mode-button").classList.toggle("active", batch);
+      $("single-panel").classList.toggle("hidden", batch);
+      $("batch-panel").classList.toggle("active", batch);
+      $("single-actions").style.display = batch ? "none" : "flex";
+    }
+    function applyStatus(status) {
+      state.modelReady = Boolean(status.loaded);
+      $("model-architecture").textContent = status.architecture || "-";
+      $("model-threshold").textContent = status.threshold ? `${(status.threshold * 100).toFixed(4)}%` : "-";
+      $("model-device").textContent = status.device || "-";
+      $("service-status").className = `status ${status.loaded ? "ready" : "error"}`;
+      $("service-status-text").textContent = status.loaded ? "Model ready" : "Model unavailable";
+      $("score-button").disabled = !status.loaded;
+      $("batch-score-button").disabled = !status.loaded;
+      $("upload-model-label").style.display = status.model_upload_enabled ? "inline-block" : "none";
+    }
+    async function refreshStatus() {
+      const response = await fetch("/model_status");
+      applyStatus(await response.json());
+    }
+    async function uploadModel(file) {
+      if (!file.name.toLowerCase().endsWith(".pt")) return toast("Model file must use the .pt extension", true);
+      $("upload-model-label").textContent = "Uploading...";
+      const body = new FormData();
+      body.append("model", file);
+      try {
+        const response = await fetch("/upload_model", { method: "POST", body });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || "Upload failed");
+        await refreshStatus();
+        resetResult();
+        toast(`Model loaded. Threshold ${(data.threshold * 100).toFixed(4)}%`);
+      } catch (error) { toast(error.message, true); }
+      finally { $("model-file").value = ""; $("upload-model-label").textContent = "Upload model"; }
+    }
+    async function initialize() {
+      try {
+        const [statusResponse, schemaResponse] = await Promise.all([fetch("/model_status"), fetch("/schema")]);
+        const status = await statusResponse.json();
+        const schema = await schemaResponse.json();
+        state.schema = schema;
+        state.samples = schema.samples;
+        buildFields(schema.input_columns);
+        $("batch-limit").textContent = `Maximum ${schema.max_batch_size} transactions`;
+        applyStatus(status);
+        if (!status.loaded) setMessage("single-error", status.error || "Model unavailable");
+        if (state.samples[0]) fillTransaction(state.samples[0].transaction);
+        loadBatchSamples();
+      } catch (error) {
+        $("service-status").className = "status error";
+        $("service-status-text").textContent = "Service unavailable";
+        setMessage("single-error", error.message);
       }
-    } catch (e) {
-      setStatus(t('status.connFail'), 'error');
-      log('log.uploadErr', 'error', e.message);
     }
-    setUploadLoading(false);
-    uploadBtn.disabled = !modelInput.files[0];
-  });
-
-  // ── Verify / Check status ─────────────────────────────────────────────────
-  async function verifyModelStatus() {
-    try {
-      const res  = await fetch(`${API}/model_status`);
-      const data = await res.json();
-      if (data.loaded) {
-        setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
-        log('log.verifyOk', 'success', data.device);
-        setModelLoaded(true);
-        renderClassList(data.classes);
-      } else {
-        setStatus(t('status.verifyFail'), 'error');
-        log('log.verifyFail', 'error');
-        setModelLoaded(false);
-        renderClassList([]);
-      }
-    } catch (e) {
-      setStatus(t('status.connFail'), 'error');
-      log('log.connFail', 'error', e.message);
-      setModelLoaded(false);
-      renderClassList([]);
-    }
-  }
-
-  checkBtn.addEventListener('click', async () => {
-    log('log.checkQuery');
-    try {
-      const res  = await fetch(`${API}/model_status`);
-      const data = await res.json();
-      if (data.loaded) {
-        setStatus(t('status.loaded', data.device, data.classes.join(', ')), 'success');
-        log('log.checkReady', 'success', data.device);
-        setModelLoaded(true);
-        renderClassList(data.classes);
-      } else {
-        setStatus(t('status.checkNone'), 'info');
-        log('log.checkNone');
-        setModelLoaded(false);
-        renderClassList([]);
-      }
-    } catch (e) {
-      setStatus(t('status.connFail'), 'error');
-      log('log.connFail', 'error', e.message);
-    }
-  });
-
-  // ── Image select ──────────────────────────────────────────────────────────
-  imageInput.addEventListener('change', () => {
-    const f = imageInput.files[0];
-    if (!f) return;
-    imageFile = f;
-    previewImg.src = URL.createObjectURL(f);
-    previewImg.style.display = 'block';
-    placeholder.style.display = 'none';
-    resultPanel.classList.remove('visible');
-    clearInferError();
-    log('log.imgSelected', 'info', f.name);
-    updateInferBtn();
-  });
-
-  // ── Drag & drop ───────────────────────────────────────────────────────────
-  function setupDropZone(zone, input, validateFn) {
-    zone.addEventListener('dragover', e => {
-      e.preventDefault();
-      const file  = e.dataTransfer.items[0];
-      const valid = !validateFn || validateFn(file);
-      zone.classList.toggle('drag-over',   valid);
-      zone.classList.toggle('drag-reject', !valid);
-    });
-    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over', 'drag-reject'));
-    zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.classList.remove('drag-over', 'drag-reject');
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      if (validateFn && !validateFn(file)) { log('log.wrongDrop', 'error'); return; }
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      input.files = dt.files;
-      input.dispatchEvent(new Event('change'));
-    });
-  }
-
-  setupDropZone(
-    document.getElementById('model-drop-zone'), modelInput,
-    f => f.name ? f.name.endsWith('.pt') : (f.type === '' || f.type === 'application/octet-stream')
-  );
-  setupDropZone(document.getElementById('image-drop-zone'), imageInput, null);
-
-  // ── Inference ─────────────────────────────────────────────────────────────
-  inferBtn.addEventListener('click', async () => {
-    if (!imageFile || !modelLoaded) return;
-    clearInferError();
-    inferSpinner.style.display = 'block';
-    inferLabel.textContent     = t('btn.inferring');
-    inferBtn.disabled          = true;
-    resultPanel.classList.remove('visible');
-    log('log.inferSend');
-    const fd = new FormData();
-    fd.append('image', imageFile);
-    try {
-      const res  = await fetch(`${API}/predict`, { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.success) {
-        showResult(data);
-        log('log.inferDone', 'success', data.prediction, data.confidence);
-      } else {
-        showInferError(t('infer.fail', data.message));
-        log('log.inferFail', 'error', data.message);
-      }
-    } catch (e) {
-      showInferError(t('infer.connFail'));
-      log('log.netErr', 'error', e.message);
-    }
-    inferSpinner.style.display = 'none';
-    inferLabel.textContent     = t('btn.infer');
-    inferBtn.disabled          = false;
-  });
-
-  function showResult(data) {
-    const card  = document.getElementById('result-card');
-    const emoji = document.getElementById('result-emoji');
-    const cls   = document.getElementById('result-class');
-    const conf  = document.getElementById('result-conf');
-    const bars  = document.getElementById('prob-bars');
-    const predLabel = data.prediction || '';
-    // reset
-    card.className = 'result-card';
-    card.style.backgroundColor = '';
-    card.style.borderColor = '';
-    cls.style.color = '';
-
-    const mainColor = colorMap[predLabel] || '#666666';
-    card.style.backgroundColor = hexToRgba(mainColor, 0.06);
-    card.style.borderColor = hexToRgba(mainColor, 0.3);
-    cls.style.color = mainColor;
-
-    emoji.textContent = emojiMap[predLabel] || (predLabel.toLowerCase().includes('fire') ? '🔥' : '🔎');
-    cls.textContent   = predLabel.toUpperCase();
-    conf.textContent  = t('result.conf', data.confidence);
-
-    bars.innerHTML = '';
-    Object.entries(data.probabilities).forEach(([name, prob]) => {
-      const fillColor = colorMap[name] || '#888888';
-      bars.innerHTML += `
-        <div class="prob-row">
-          <div class="prob-name">${name}</div>
-          <div class="prob-track">
-            <div class="prob-fill" style="width:0%;background:${fillColor};" data-target="${prob}"></div>
-          </div>
-          <div class="prob-value">${prob}%</div>
-        </div>`;
-    });
-    resultPanel.classList.add('visible');
-    setTimeout(() => bars.querySelectorAll('.prob-fill').forEach(el => { el.style.width = el.dataset.target + '%'; }), 50);
-  }
-
-  // ── Clear ─────────────────────────────────────────────────────────────────
-  clearBtn.addEventListener('click', () => {
-    imageFile = null;
-    imageInput.value = '';
-    previewImg.style.display = 'none';
-    placeholder.style.display = 'block';
-    resultPanel.classList.remove('visible');
-    clearInferError();
-    updateInferBtn();
-    log('log.cleared');
-  });
-
-  // ── Language toggle ───────────────────────────────────────────────────────
-  document.getElementById('lang-btn').addEventListener('click', () => {
-    lang = lang === 'zh' ? 'en' : 'zh';
-    applyLang();
-  });
-
-  // ── Init ──────────────────────────────────────────────────────────────────
-  window.addEventListener('load', () => {
-    applyLang();
-    log('log.init');
-  });
-</script>
+    $("single-mode-button").addEventListener("click", () => setMode("single"));
+    $("batch-mode-button").addEventListener("click", () => setMode("batch"));
+    $("load-normal-button").addEventListener("click", () => state.samples[0] && fillTransaction(state.samples[0].transaction));
+    $("load-fraud-button").addEventListener("click", () => state.samples[1] && fillTransaction(state.samples[1].transaction));
+    $("clear-button").addEventListener("click", clearTransaction);
+    $("score-button").addEventListener("click", scoreSingle);
+    $("transaction-form").addEventListener("submit", (event) => { event.preventDefault(); scoreSingle(); });
+    $("batch-example-button").addEventListener("click", loadBatchSamples);
+    $("batch-score-button").addEventListener("click", scoreBatch);
+    $("model-file").addEventListener("change", () => $("model-file").files[0] && uploadModel($("model-file").files[0]));
+    initialize();
+  </script>
 </body>
 </html>

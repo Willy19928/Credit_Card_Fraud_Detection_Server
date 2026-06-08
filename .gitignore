@@ -1,29 +1,18 @@
-# 模型檔案（學生自行訓練，不進 git）
-*.pth
-
-# 測試圖片
-test_image*.jpg
-
-
 # Python
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 .venv/
 venv/
 *.egg-info/
 
-# 環境變數
+# Local configuration
 .env
 .env.*
 
-# Docker
-.dockerignore
-
-# OS
+# OS and IDE
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/
 .idea/

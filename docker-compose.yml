@@ -1,11 +1,10 @@
 services:
-
   inference:
     build:
       context: .
       dockerfile: Dockerfile
-    image: fire-detection-inference:latest
-    container_name: fire-inference
+    image: credit-card-fraud-inference:latest
+    container_name: fraud-inference
     restart: unless-stopped
     ports:
       - "80:5000"
@@ -13,15 +12,21 @@ services:
       - model_storage:/app/models
     environment:
       - FLASK_ENV=production
-      - MODEL_PATH=/app/models/best.pt
+      - VERIFY_MODEL_HASHES=1
+      - ALLOW_MODEL_UPLOAD=1
+      - MAX_BATCH_SIZE=1000
     healthcheck:
-      test: ["CMD", "python", "-c",
-             "import urllib.request; urllib.request.urlopen('http://localhost:5000/model_status')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import json, urllib.request; data=json.load(urllib.request.urlopen('http://localhost:5000/model_status')); raise SystemExit(0 if data['loaded'] else 1)",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 20s
 
 volumes:
   model_storage:
-    driver: local

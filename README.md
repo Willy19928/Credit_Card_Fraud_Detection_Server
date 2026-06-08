@@ -1,222 +1,247 @@
-# Fire Detection — Inference Server
+# Credit Card Fraud Detection - Azure Inference Server
 
-A simple Flask web server that lets you upload a trained MobileNetV2 model (`.pt`) and run fire/non-fire inference on images through a browser UI.
+This project was forked from
+[joe50304/azure_cloud_inference](https://github.com/joe50304/azure_cloud_inference)
+and modified for the AISec Final credit-card fraud detection project. The
+original MobileNet image-classification inference workflow was replaced with a
+Flask-based tabular transaction scoring service.
 
-This project is for students learning **cloud deployment on Azure**. One student trains the model in Google Colab, another deploys this server so the whole class can test it.
+The service:
 
----
+- loads the packaged `FraudMLP(96-48-16)` checkpoint and preprocessing artifact;
+- accepts one transaction or a JSON batch;
+- reproduces the notebook's feature engineering and scaling;
+- uses the checkpoint's validation-selected threshold;
+- routes flagged transactions to human review;
+- lets users upload a compatible `.pt` checkpoint through the web UI or API.
 
-## How It Works
+## Model Contract
 
+Raw requests must contain exactly these 30 numeric fields:
+
+```text
+Time, V1, V2, ... V28, Amount
 ```
-Student A (Google Colab)         This Server                     Your Browser
-────────────────────────         ─────────────────────────────   ─────────────────
-Train MobileNetV2            →   POST /upload_model  (best.pt)
-Export best.pt                   POST /predict       (image)   ←  upload & test
-                                 GET  /              (UI)      ←  http://<IP>
+
+The server uses the packaged `preprocessing.joblib` to create the model's 34
+features:
+
+```text
+V1 ... V28, Hour, Hour_sin, Hour_cos,
+scaled_Time, scaled_Amount, scaled_log_Amount
 ```
 
----
+The deployed model artifact is accepted only when it contains:
 
-## Plan A — Deploy on Azure VM
+- architecture: `FraudMLP(96-48-16)`;
+- `model_state_dict`;
+- the same 34 `feature_columns` as the packaged preprocessing artifact;
+- a decision `threshold`.
 
-Good for sharing with the whole class — everyone just opens a URL.
+Uploaded checkpoints are loaded with `torch.load(..., weights_only=True)`.
+Uploading a replacement preprocessing artifact is intentionally unsupported.
 
-> **No extra software needed.** Everything runs in your browser through the Azure Portal.
+## Included Artifacts
 
-### Step 1 — Create a Virtual Machine
+| File | Purpose |
+| --- | --- |
+| `models/primary_mlp.pt` | Primary tabular neural-network checkpoint |
+| `models/preprocessing.joblib` | Training-fitted scalers and feature order |
+| `models/model_manifest.json` | Artifact metadata and preprocessing SHA-256 |
+| `sample_transactions.json` | Public-dataset examples used by the UI |
 
-1. Go to [portal.azure.com](https://portal.azure.com) and sign in
-2. Search for **Virtual machines** → click **Create → Azure virtual machine**
-3. Fill in the basics:
+Packaged model threshold: `0.9838983416557312`.
 
-   | Field | Value |
-   |-------|-------|
-   | Resource group | Create new → `fire-rg` |
-   | Virtual machine name | `fire-vm` |
-   | Region | East Asia (or wherever is closest) |
-   | Image | **Ubuntu Server 24.04 LTS** |
-   | Size | **Standard_D2s** (2 vCPU, 8 GB RAM) |
-   | Authentication type | Password |
-   | Username | `ntut` + `Your School IDs` |
-   | Password | set your own |
+## Run Locally
 
-4. Click **Next: Disks** → leave defaults
-5. Click **Next: Networking** → make sure **Public IP** is set to `(new)`
-6. Click **Review + create** → **Create**
-7. Wait ~2 minutes for deployment to finish
-
-### Step 2 — Connect via Browser (No SSH Client Needed)
-
-1. On your VM page, click **Connect → SSH using Azure CLI**
-2. A terminal opens right in your browser — no PuTTY, no local SSH needed
-
-   > If prompted, click **Configure** to enable the connection, then try again.
-
----
-
-### Option A-1 — Plain Python (No Docker)
-
-#### Open Port 5000
-
-1. Go to your VM → **Networking** → **Add inbound port rule**
-2. Set port to `5000`, Protocol `TCP` → **Add**
-
-#### Install and Start
+Python 3.10 or later is recommended.
 
 ```bash
-sudo apt update && sudo apt install -y python3 python3.12-venv git
+python -m venv .venv
 
-git clone https://github.com/joe50304/azure_cloud_inference.git
-cd azure_cloud_inference
+# Windows
+.venv\Scripts\activate
 
-python3 -m venv .venv
+# Linux or macOS
 source .venv/bin/activate
-pip install -r requirements.txt
 
-python3 app.py
+pip install -r requirements.txt
+python app.py
 ```
 
-Access at `http://<IP>:5000`.
+Open `http://localhost:5000`.
 
----
-
-### Option A-2 — With Docker
-
-#### Open Port 80
-
-1. Go to your VM → **Networking** → **Add inbound port rule**
-2. Set port to `80`, Protocol `TCP` → **Add**
-
-#### Install Docker and Start
+## Run With Docker
 
 ```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f
+```
+
+Open `http://localhost`.
+
+The Docker named volume `model_storage` preserves user-uploaded compatible
+models across container restarts. On startup, the container copies only missing
+default artifacts into the volume and does not overwrite an uploaded
+`primary_mlp.pt`.
+
+Reset to the checkpoint packaged in the image:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+## Deploy On An Azure VM
+
+Create an Ubuntu VM, allow inbound TCP port `80`, then run:
+
+```bash
+sudo apt update
+sudo apt install -y git
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 newgrp docker
 
-git clone https://github.com/joe50304/azure_cloud_inference.git
+git clone https://github.com/Willy19928/azure_cloud_inference.git
 cd azure_cloud_inference
-docker compose up -d
+docker compose up -d --build
 ```
 
-First build takes ~5 minutes. Check status:
+Open `http://<VM_PUBLIC_IP>`.
 
-```bash
-docker compose ps
+Stop or deallocate the VM when it is not in use to avoid unnecessary charges.
+
+## API
+
+### Status
+
+```http
+GET /model_status
 ```
 
-`fire-inference` should show `healthy`. Access at `http://<IP>`.
+Returns the loaded architecture, threshold, device, artifact SHA-256, and upload
+availability.
 
----
+### Schema And Samples
 
-### Step 3 — Get Your Public IP
-
-On the VM overview page in Azure Portal, copy the **Public IP address** and share with the class.
-
-### Cost Estimate (Azure Student $100 Credits)
-
-| Resource | Spec | Est. Cost |
-|----------|------|-----------|
-| VM | Standard_D2s | ~$30/mo |
-| Public IP | Standard | ~$4/mo |
-| Disk | 30 GB OS | ~$2/mo |
-| **Total** | | ~**$36/mo** |
-
-> **Save credits:** When you're done testing, go to your VM in the Portal → click **Stop**. You only pay for storage (~$2/mo) while it's stopped. Click **Start** to bring it back.
-
----
-
-## Plan B — Run Locally (Windows / Mac)
-
-Use this if you don't have Azure access, or just want to test on your own machine.
-
-### Option B-1 — Docker Desktop (Easiest)
-
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and make sure it's running
-2. Open a terminal (PowerShell or Command Prompt on Windows) and run:
-
-```bash
-git clone https://github.com/joe50304/azure_cloud_inference.git
-cd azure_cloud_inference
-docker compose up -d
+```http
+GET /schema
 ```
 
-3. Open `http://localhost` in your browser. Done.
+Returns required input columns, batch limit, and UI sample transactions.
 
-### Option B-2 — Plain Python (No Docker)
+### Single Prediction
 
-Use this if Docker Desktop isn't available.
-
-```bash
-git clone https://github.com/joe50304/azure_cloud_inference.git
-cd azure_cloud_inference
-
-# Create a virtual environment
-python -m venv .venv
-
-# Activate it
-# Windows:
-.venv\Scripts\activate
-# Mac/Linux:
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the server
-python app.py
+```http
+POST /predict
+Content-Type: application/json
 ```
 
-Open `http://localhost:5000`. Done.
-
----
-
-## API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/` | Web UI |
-| GET | `/model_status` | Check if model is loaded |
-| POST | `/upload_model` | Upload `best.pt` (form-data key: `model`) |
-| POST | `/predict` | Run inference (form-data key: `image`) |
-
-Example response from `/predict`:
 ```json
 {
-  "success": true,
-  "prediction": "fire",
-  "confidence": 97.43,
-  "probabilities": { "fire": 97.43, "non-fire": 2.57 },
-  "image_b64": "data:image/jpeg;base64,..."
+  "Time": 0,
+  "V1": -1.3598071336738,
+  "V2": -0.0727811733098497,
+  "V3": 2.53634673796914,
+  "V4": 1.37815522427443,
+  "V5": -0.338320769942518,
+  "V6": 0.462387777762292,
+  "V7": 0.239598554061257,
+  "V8": 0.0986979012610507,
+  "V9": 0.363786969611213,
+  "V10": 0.0907941719789316,
+  "V11": -0.551599533260813,
+  "V12": -0.617800855762348,
+  "V13": -0.991389847235408,
+  "V14": -0.311169353699879,
+  "V15": 1.46817697209427,
+  "V16": -0.470400525259478,
+  "V17": 0.207971241929242,
+  "V18": 0.0257905801985591,
+  "V19": 0.403992960255733,
+  "V20": 0.251412098239705,
+  "V21": -0.018306777944153,
+  "V22": 0.277837575558899,
+  "V23": -0.110473910188767,
+  "V24": 0.0669280749146731,
+  "V25": 0.128539358273528,
+  "V26": -0.189114843888824,
+  "V27": 0.133558376740387,
+  "V28": -0.0210530534538215,
+  "Amount": 149.62
 }
 ```
 
----
+Example response:
 
-## Project Structure
-
+```json
+{
+  "success": true,
+  "count": 1,
+  "predictions": [
+    {
+      "index": 0,
+      "prediction": "normal",
+      "fraud_probability": 0.05713778,
+      "fraud_probability_percent": 5.7138,
+      "threshold": 0.9838983416557312,
+      "requires_human_review": false
+    }
+  ]
+}
 ```
-azure_cloud_inference/
-├── app.py                      # Flask backend
-├── templates/
-│   └── index.html              # Frontend UI
-├── requirements.txt            # Python dependencies (CPU-only torch)
-├── Dockerfile                  # Multi-stage build
-├── docker-compose.yml          # Flask service
-├── colab_training_template.py  # Template for the Colab student
-└── .gitignore
+
+### Batch Prediction
+
+Send a JSON list or wrap it in a `transactions` object:
+
+```json
+{
+  "transactions": [
+    { "Time": 0, "V1": 0, "V2": 0, "V3": 0, "V4": 0, "V5": 0, "V6": 0, "V7": 0, "V8": 0, "V9": 0, "V10": 0, "V11": 0, "V12": 0, "V13": 0, "V14": 0, "V15": 0, "V16": 0, "V17": 0, "V18": 0, "V19": 0, "V20": 0, "V21": 0, "V22": 0, "V23": 0, "V24": 0, "V25": 0, "V26": 0, "V27": 0, "V28": 0, "Amount": 0 }
+  ]
+}
 ```
 
----
+Default batch limit: `1000`.
 
-## Useful Docker Commands
+### Upload A Compatible Model
+
+```http
+POST /upload_model
+Content-Type: multipart/form-data
+form field: model
+```
 
 ```bash
-docker compose up -d            # Start in background
-docker compose down             # Stop
-docker compose ps               # Check status
-docker compose logs -f          # Stream logs
-docker compose up -d --build    # Rebuild after code changes
-docker compose down -v          # Stop and delete model volume (resets uploaded model)
+curl -F "model=@models/primary_mlp.pt" http://localhost:5000/upload_model
 ```
+
+The service validates the checkpoint before atomically replacing the active
+model. Docker uses one Gunicorn worker so the newly uploaded in-memory model is
+used consistently by following requests.
+
+## Configuration
+
+| Environment variable | Default |
+| --- | --- |
+| `MODEL_PATH` | `models/primary_mlp.pt` |
+| `PREPROCESSING_PATH` | `models/preprocessing.joblib` |
+| `MODEL_MANIFEST_PATH` | `models/model_manifest.json` |
+| `ALLOW_MODEL_UPLOAD` | `1` |
+| `VERIFY_MODEL_HASHES` | `1` |
+| `MAX_BATCH_SIZE` | `1000` |
+| `MAX_CONTENT_LENGTH` | `20971520` bytes |
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+The classifier is intended for classroom risk scoring with human review. It
+must not automatically block accounts or punish customers without production
+governance, monitoring, and incident-response controls.
