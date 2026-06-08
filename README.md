@@ -104,8 +104,8 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
 newgrp docker
 
-git clone https://github.com/Willy19928/azure_cloud_inference.git
-cd azure_cloud_inference
+git clone https://github.com/Willy19928/Credit_Card_Fraud_Detection_Server.git
+cd Credit_Card_Fraud_Detection_Server
 docker compose up -d --build
 ```
 
