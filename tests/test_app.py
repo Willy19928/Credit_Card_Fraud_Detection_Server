@@ -115,6 +115,18 @@ def test_checkpoint_validation_rejects_invalid_threshold(tmp_path):
         )
 
 
+def test_text_artifact_hash_is_stable_across_line_endings(tmp_path):
+    lf_path = tmp_path / "lf.json"
+    crlf_path = tmp_path / "crlf.json"
+    lf_path.write_bytes(b'{\n  "value": 1\n}\n')
+    crlf_path.write_bytes(b'{\r\n  "value": 1\r\n}\r\n')
+
+    assert inference_app.sha256_artifact(lf_path) == inference_app.sha256_artifact(
+        crlf_path
+    )
+    assert inference_app.sha256_file(lf_path) != inference_app.sha256_file(crlf_path)
+
+
 def test_preprocessing_validation_rejects_missing_scaler():
     bad_preprocessing = {
         "numeric_scaler": None,

@@ -28,6 +28,7 @@ MODEL_FEATURE_COLUMNS = [
     "scaled_log_Amount",
 ]
 EXPECTED_ARCHITECTURE = "FraudMLP(96-48-16)"
+TEXT_SUFFIXES = {".csv", ".json", ".md", ".txt"}
 MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "1000"))
 MAX_ABS_INPUT_VALUE = float(os.environ.get("MAX_ABS_INPUT_VALUE", "1000000000"))
 
@@ -93,6 +94,13 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_artifact(path: Path) -> str:
+    raw = path.read_bytes()
+    if path.suffix.lower() in TEXT_SUFFIXES:
+        raw = raw.replace(b"\r\n", b"\n")
+    return hashlib.sha256(raw).hexdigest()
+
+
 def load_model_manifest() -> dict:
     manifest = json.loads(MODEL_MANIFEST_PATH.read_text(encoding="utf-8"))
     required_keys = {
@@ -131,7 +139,7 @@ def verify_artifact_hashes(manifest: dict) -> None:
         expected = expected_hashes.get(artifact_name)
         if not expected:
             raise ValueError(f"Artifact manifest is missing SHA-256 for {artifact_name}")
-        actual = sha256_file(artifact_path)
+        actual = sha256_artifact(artifact_path)
         if actual.lower() != expected.lower():
             raise ValueError(f"SHA-256 verification failed for {artifact_name}")
 

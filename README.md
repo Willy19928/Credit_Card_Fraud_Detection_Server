@@ -121,8 +121,10 @@ docker compose up -d --build
 The checkpoint and preprocessing artifact must come from the same notebook run.
 The manifest script validates architecture, feature-column order, fitted scaler
 behavior, threshold, finite model parameters, run metadata, and artifact hashes.
-It then records a deployment `artifact_set_id`. With `VERIFY_MODEL_HASHES=1`,
-startup fails if the committed manifest does not match the files in `models/`.
+Text artifact hashes use LF-normalized bytes so the manifest is stable across
+Windows and Linux checkouts; binary hashes use exact bytes. The script then
+records a deployment `artifact_set_id`. With `VERIFY_MODEL_HASHES=1`, startup
+fails if the committed manifest does not match the files in `models/`.
 
 ## Deploy On An Azure VM
 

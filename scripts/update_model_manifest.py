@@ -21,6 +21,7 @@ EXPECTED_FEATURE_COLUMNS = [
     "scaled_Amount",
     "scaled_log_Amount",
 ]
+TEXT_SUFFIXES = {".csv", ".json", ".md", ".txt"}
 
 
 def sha256_file(path: Path) -> str:
@@ -29,6 +30,13 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: file_handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def sha256_artifact(path: Path) -> str:
+    raw = path.read_bytes()
+    if path.suffix.lower() in TEXT_SUFFIXES:
+        raw = raw.replace(b"\r\n", b"\n")
+    return hashlib.sha256(raw).hexdigest()
 
 
 def sha256_text(text: str) -> str:
@@ -82,7 +90,7 @@ def read_run_metadata(path: Path) -> tuple[dict, str | None]:
                 "threshold": primary_model.get("threshold"),
             },
         },
-        sha256_file(path),
+        sha256_artifact(path),
     )
 
 
