@@ -3,6 +3,9 @@ name: Server CI
 on:
   push:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -18,6 +21,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
 
+      - name: Audit dependencies
+        run: python scripts/audit_dependencies.py
+
       - name: Validate model manifest
         run: |
           python scripts/update_model_manifest.py
@@ -25,3 +31,10 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+
+      - name: Build Docker image
+        run: docker build -t fraud-inference-ci .
+
+      - name: Exercise Docker entrypoint
+        run: |
+          docker run --rm fraud-inference-ci python -c "from pathlib import Path; required=['primary_mlp.pt','preprocessing.joblib','model_manifest.json','run_metadata.json']; missing=[name for name in required if not Path('/app/models', name).is_file()]; raise SystemExit('missing copied artifacts: '+', '.join(missing) if missing else 0)"

@@ -1,11 +1,12 @@
-FROM python:3.11-slim AS builder
+ARG PYTHON_BASE_IMAGE=python:3.11.15-slim-trixie@sha256:a3ab0b966bc4e91546a033e22093cb840908979487a9fc0e6e38295747e49ac0
+FROM ${PYTHON_BASE_IMAGE} AS builder
 
 WORKDIR /install
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/deps -r requirements.txt
 
 
-FROM python:3.11-slim
+FROM ${PYTHON_BASE_IMAGE}
 
 LABEL description="Credit Card Fraud Detection Inference Service"
 

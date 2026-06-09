@@ -110,6 +110,8 @@ read-only artifacts. Replace `models/primary_mlp.pt`,
 `models/model_manifest.json` before startup when you need to serve a newly
 trained model. If a required mounted artifact is missing, the container exits
 instead of silently serving an incomplete model set.
+The Dockerfile pins its Python base image by digest so rebuilds do not
+silently consume a different base image.
 
 Reload artifacts after replacing local files:
 
@@ -157,8 +159,15 @@ control, then run:
 
 ```bash
 sudo apt update
-sudo apt install -y git
-curl -fsSL https://get.docker.com | sh
+sudo apt install -y ca-certificates curl git gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /tmp/docker.asc
+sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 sudo usermod -aG docker $USER
 newgrp docker
 
@@ -290,11 +299,13 @@ Default batch limit: `1000`.
 ```bash
 pip install -r requirements-dev.txt
 python -m pytest -q
+python scripts/audit_dependencies.py
 ```
 
-Server CI runs on trusted branch pushes because artifact validation loads
-PyTorch and joblib files. Do not run artifact-loading jobs on unreviewed pull
-requests from untrusted sources.
+Server CI runs tests, dependency audit, manifest regeneration checks, Docker
+build, and Docker entrypoint artifact-copy checks on trusted branch pushes
+because artifact validation loads PyTorch and joblib files. Do not run
+artifact-loading jobs on unreviewed pull requests from untrusted sources.
 
 The classifier is intended for classroom risk scoring with human review. It
 must not automatically block accounts or punish customers without production

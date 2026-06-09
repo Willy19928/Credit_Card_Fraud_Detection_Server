@@ -1,9 +1,20 @@
 import io
+import importlib.util
 import json
+from pathlib import Path
 
 import pytest
 
 import app as inference_app
+
+UPDATE_MANIFEST_PATH = (
+    Path(__file__).resolve().parents[1] / "scripts" / "update_model_manifest.py"
+)
+UPDATE_MANIFEST_SPEC = importlib.util.spec_from_file_location(
+    "update_model_manifest", UPDATE_MANIFEST_PATH
+)
+update_model_manifest = importlib.util.module_from_spec(UPDATE_MANIFEST_SPEC)
+UPDATE_MANIFEST_SPEC.loader.exec_module(update_model_manifest)
 
 
 @pytest.fixture()
@@ -147,6 +158,37 @@ def test_manifest_validation_rejects_metadata_mismatch(tmp_path, monkeypatch):
 
     with pytest.raises(ValueError, match="model feature count"):
         inference_app.load_model_manifest()
+
+
+def test_manifest_requires_run_metadata_hash(tmp_path, monkeypatch):
+    manifest = json.loads(json.dumps(inference_app.load_model_manifest()))
+    manifest["artifact_sha256"].pop("run_metadata.json")
+    manifest_path = tmp_path / "model_manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(inference_app, "MODEL_MANIFEST_PATH", manifest_path)
+
+    with pytest.raises(ValueError, match="run_metadata.json"):
+        inference_app.load_model_manifest()
+
+
+def test_hash_verification_requires_run_metadata_file(tmp_path, monkeypatch):
+    manifest = inference_app.load_model_manifest()
+    monkeypatch.setattr(inference_app, "RUN_METADATA_PATH", tmp_path / "missing.json")
+
+    with pytest.raises(
+        ValueError, match="Required artifact is missing: run_metadata.json"
+    ):
+        inference_app.verify_artifact_hashes(manifest)
+
+
+def test_update_manifest_requires_run_metadata(tmp_path):
+    with pytest.raises(ValueError, match="run_metadata.json is required"):
+        update_model_manifest.write_manifest(
+            inference_app.MODEL_PATH,
+            inference_app.PREPROCESSING_PATH,
+            tmp_path / "model_manifest.json",
+            tmp_path / "missing-run_metadata.json",
+        )
 
 
 def test_unexpected_inference_error_returns_json_without_internal_details(

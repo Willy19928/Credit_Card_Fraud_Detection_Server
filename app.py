@@ -110,9 +110,26 @@ def load_model_manifest() -> dict:
         "model_feature_count",
         "artifact_sha256",
         "artifact_set_id",
+        "training_run",
     }
     if not required_keys.issubset(manifest):
         raise ValueError("Model manifest is missing required metadata")
+    expected_hashes = manifest["artifact_sha256"]
+    if not isinstance(expected_hashes, dict):
+        raise ValueError("Model manifest artifact_sha256 must be an object")
+    required_artifact_hashes = {
+        "primary_mlp.pt",
+        "preprocessing.joblib",
+        "run_metadata.json",
+    }
+    missing_hashes = sorted(required_artifact_hashes - set(expected_hashes))
+    if missing_hashes:
+        raise ValueError(
+            "Model manifest is missing SHA-256 for: " + ", ".join(missing_hashes)
+        )
+    training_run = manifest["training_run"]
+    if not isinstance(training_run, dict) or not training_run.get("dataset_sha256"):
+        raise ValueError("Model manifest is missing training run metadata")
     if manifest["architecture"] != EXPECTED_ARCHITECTURE:
         raise ValueError(f"Manifest architecture must be {EXPECTED_ARCHITECTURE}")
     if int(manifest["raw_feature_count"]) != len(RAW_FEATURE_COLUMNS):
@@ -132,13 +149,14 @@ def verify_artifact_hashes(manifest: dict) -> None:
     artifacts = {
         "primary_mlp.pt": MODEL_PATH,
         "preprocessing.joblib": PREPROCESSING_PATH,
+        "run_metadata.json": RUN_METADATA_PATH,
     }
-    if expected_hashes.get("run_metadata.json"):
-        artifacts["run_metadata.json"] = RUN_METADATA_PATH
     for artifact_name, artifact_path in artifacts.items():
         expected = expected_hashes.get(artifact_name)
         if not expected:
             raise ValueError(f"Artifact manifest is missing SHA-256 for {artifact_name}")
+        if not artifact_path.exists():
+            raise ValueError(f"Required artifact is missing: {artifact_name}")
         actual = sha256_artifact(artifact_path)
         if actual.lower() != expected.lower():
             raise ValueError(f"SHA-256 verification failed for {artifact_name}")

@@ -69,12 +69,27 @@ def validate_scaler(scaler, name: str, expected_feature_names: list[str]) -> Non
         raise ValueError(f"{name} produced non-finite values")
 
 
-def read_run_metadata(path: Path) -> tuple[dict, str | None]:
+def read_run_metadata(path: Path) -> tuple[dict, str]:
     if not path.exists():
-        return {}, None
+        raise ValueError(f"run_metadata.json is required at {path}")
     metadata = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(metadata, dict):
+        raise ValueError("run_metadata.json must contain a JSON object")
     dataset = metadata.get("dataset", {})
     primary_model = metadata.get("primary_model", {})
+    required_metadata = {
+        "run_id": metadata.get("run_id"),
+        "artifact_set_id": metadata.get("artifact_set_id"),
+        "dataset.dataset_sha256": dataset.get("dataset_sha256"),
+    }
+    missing_metadata = [
+        name for name, value in required_metadata.items() if not value
+    ]
+    if missing_metadata:
+        raise ValueError(
+            "run_metadata.json is missing required fields: "
+            + ", ".join(missing_metadata)
+        )
     return (
         {
             "run_id": metadata.get("run_id"),
@@ -155,9 +170,8 @@ def write_manifest(
     artifact_hashes = {
         "primary_mlp.pt": model_hash,
         "preprocessing.joblib": preprocessing_hash,
+        "run_metadata.json": metadata["run_metadata_sha256"],
     }
-    if metadata["run_metadata_sha256"]:
-        artifact_hashes["run_metadata.json"] = metadata["run_metadata_sha256"]
     artifact_set_id = metadata["training_run"].get("artifact_set_id") or (
         "sha256:" + sha256_text("|".join(sorted(artifact_hashes.values())))
     )
@@ -188,7 +202,7 @@ def main() -> None:
     parser.add_argument(
         "--run-metadata",
         default="models/run_metadata.json",
-        help="Optional run metadata copied from the training repository.",
+        help="Required run metadata copied from the training repository.",
     )
     args = parser.parse_args()
 
