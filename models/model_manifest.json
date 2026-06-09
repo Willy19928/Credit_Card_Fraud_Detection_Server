@@ -9,5 +9,6 @@
     "preprocessing.joblib": "39ae79e0c28f7937c74a9ab03356fac0f01e49d3e3a59f2811ece0dbd420ed9b"
   },
   "source_project": "AISec Final - SDG 8 Credit Card Fraud Detection",
-  "intended_use": "Classroom fraud-risk scoring with human review"
+  "intended_use": "Classroom fraud-risk scoring with human review",
+  "update_mode": "offline artifact replacement before service startup"
 }

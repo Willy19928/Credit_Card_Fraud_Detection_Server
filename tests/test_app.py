@@ -1,6 +1,5 @@
 import io
 import json
-import shutil
 
 import pytest
 
@@ -26,7 +25,7 @@ def test_model_status_reports_loaded_model(client):
     assert payload["loaded"] is True
     assert payload["architecture"] == "FraudMLP(96-48-16)"
     assert payload["model_feature_count"] == 34
-    assert payload["model_upload_enabled"] is True
+    assert payload["model_update_mode"] == "replace artifacts before service startup"
 
 
 def test_predict_single_and_batch(client, samples):
@@ -56,53 +55,23 @@ def test_predict_rejects_missing_and_unknown_columns(client, samples):
     assert "unknown columns: Class" in unknown_response.get_json()["message"]
 
 
-def test_upload_rejects_non_pt_file(client):
+def test_upload_endpoint_is_not_available(client):
     response = client.post(
         "/upload_model",
-        data={"model": (io.BytesIO(b"not a checkpoint"), "model.txt")},
+        data={"model": (io.BytesIO(b"not a checkpoint"), "model.pt")},
         content_type="multipart/form-data",
     )
 
-    assert response.status_code == 400
-    assert ".pt extension" in response.get_json()["message"]
+    assert response.status_code == 404
 
 
-def test_upload_accepts_compatible_checkpoint(client, tmp_path, monkeypatch):
-    original_model_path = inference_app.MODEL_PATH
-    temporary_model_path = tmp_path / "primary_mlp.pt"
-    shutil.copy2(original_model_path, temporary_model_path)
-    monkeypatch.setattr(inference_app, "MODEL_PATH", temporary_model_path)
-
-    response = client.post(
-        "/upload_model",
-        data={
-            "model": (
-                io.BytesIO(original_model_path.read_bytes()),
-                "replacement.pt",
-            )
-        },
-        content_type="multipart/form-data",
-    )
-
-    assert response.status_code == 200
-    assert response.get_json()["success"] is True
-    assert response.get_json()["architecture"] == "FraudMLP(96-48-16)"
-
-
-def test_upload_rejects_invalid_threshold(client):
+def test_checkpoint_validation_rejects_invalid_threshold(tmp_path):
     checkpoint = inference_app.torch.load(
         inference_app.MODEL_PATH, map_location="cpu", weights_only=True
     )
     checkpoint["threshold"] = 2.0
-    buffer = io.BytesIO()
-    inference_app.torch.save(checkpoint, buffer)
-    buffer.seek(0)
+    candidate_path = tmp_path / "invalid-threshold.pt"
+    inference_app.torch.save(checkpoint, candidate_path)
 
-    response = client.post(
-        "/upload_model",
-        data={"model": (buffer, "invalid-threshold.pt")},
-        content_type="multipart/form-data",
-    )
-
-    assert response.status_code == 400
-    assert "between 0 and 1" in response.get_json()["message"]
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        inference_app.build_model_from_checkpoint(candidate_path, inference_app.preprocessing)

@@ -27,7 +27,6 @@ USER appuser
 ENV MODEL_PATH=/app/models/primary_mlp.pt
 ENV PREPROCESSING_PATH=/app/models/preprocessing.joblib
 ENV MODEL_MANIFEST_PATH=/app/models/model_manifest.json
-ENV ALLOW_MODEL_UPLOAD=1
 
 EXPOSE 5000
 
@@ -36,7 +35,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
 
 ENTRYPOINT ["fraud-inference-entrypoint"]
 
-# One worker keeps an uploaded in-memory model consistent with subsequent requests.
+# One worker keeps the classroom demo resource usage predictable.
 CMD ["gunicorn", \
      "--bind", "0.0.0.0:5000", \
      "--workers", "1", \

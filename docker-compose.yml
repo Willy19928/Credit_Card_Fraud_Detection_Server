@@ -9,11 +9,10 @@ services:
     ports:
       - "80:5000"
     volumes:
-      - model_storage:/app/models
+      - ./models:/app/models:ro
     environment:
       - FLASK_ENV=production
       - VERIFY_MODEL_HASHES=1
-      - ALLOW_MODEL_UPLOAD=1
       - MAX_BATCH_SIZE=1000
     healthcheck:
       test:
@@ -27,6 +26,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
-
-volumes:
-  model_storage:

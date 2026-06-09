@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-import tempfile
 import threading
 from pathlib import Path
 
@@ -16,7 +15,6 @@ from flask import Flask, jsonify, render_template, request
 BASE_DIR = Path(__file__).resolve().parent
 RAW_FEATURE_COLUMNS = ["Time", *[f"V{i}" for i in range(1, 29)], "Amount"]
 MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "1000"))
-ALLOW_MODEL_UPLOAD = os.environ.get("ALLOW_MODEL_UPLOAD", "1") == "1"
 
 
 def configured_path(env_name: str, default: str) -> Path:
@@ -79,14 +77,22 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def verify_preprocessing_hash():
+def verify_artifact_hashes():
     if os.environ.get("VERIFY_MODEL_HASHES", "1") == "0":
         return
     manifest = json.loads(MODEL_MANIFEST_PATH.read_text(encoding="utf-8"))
-    expected = manifest["artifact_sha256"]["preprocessing.joblib"]
-    actual = sha256_file(PREPROCESSING_PATH)
-    if actual.lower() != expected.lower():
-        raise ValueError("SHA-256 verification failed for preprocessing.joblib")
+    expected_hashes = manifest.get("artifact_sha256", {})
+    artifacts = {
+        "primary_mlp.pt": MODEL_PATH,
+        "preprocessing.joblib": PREPROCESSING_PATH,
+    }
+    for artifact_name, artifact_path in artifacts.items():
+        expected = expected_hashes.get(artifact_name)
+        if not expected:
+            raise ValueError(f"Artifact manifest is missing SHA-256 for {artifact_name}")
+        actual = sha256_file(artifact_path)
+        if actual.lower() != expected.lower():
+            raise ValueError(f"SHA-256 verification failed for {artifact_name}")
 
 
 def load_preprocessing_artifact():
@@ -138,7 +144,7 @@ def load_model_artifacts() -> bool:
     model_load_error = None
 
     try:
-        verify_preprocessing_hash()
+        verify_artifact_hashes()
         loaded_preprocessing = load_preprocessing_artifact()
         loaded_model, loaded_metadata = build_model_from_checkpoint(
             MODEL_PATH, loaded_preprocessing
@@ -279,7 +285,7 @@ def model_status():
             "artifact_sha256": model_metadata.get("artifact_sha256"),
             "raw_feature_count": len(RAW_FEATURE_COLUMNS),
             "model_feature_count": len(model_metadata.get("feature_columns", [])),
-            "model_upload_enabled": ALLOW_MODEL_UPLOAD,
+            "model_update_mode": "replace artifacts before service startup",
             "error": model_load_error,
         }
     )
@@ -325,63 +331,9 @@ def predict():
         return jsonify({"success": False, "message": str(exc)}), 400
 
 
-@app.post("/upload_model")
-def upload_model():
-    global model, model_metadata, model_load_error
-    if not ALLOW_MODEL_UPLOAD:
-        return jsonify({"success": False, "message": "Model upload is disabled"}), 403
-    if preprocessing is None:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "message": model_load_error or "Preprocessing artifact is not loaded",
-                }
-            ),
-            503,
-        )
-
-    uploaded_file = request.files.get("model")
-    if uploaded_file is None or not uploaded_file.filename:
-        return jsonify({"success": False, "message": "A model file is required"}), 400
-    if not uploaded_file.filename.lower().endswith(".pt"):
-        return jsonify({"success": False, "message": "Model file must use the .pt extension"}), 400
-
-    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            dir=MODEL_PATH.parent, prefix=".candidate-", suffix=".pt", delete=False
-        ) as temp_file:
-            temp_path = Path(temp_file.name)
-            uploaded_file.save(temp_file)
-        candidate_model, candidate_metadata = build_model_from_checkpoint(
-            temp_path, preprocessing
-        )
-        with model_lock:
-            os.replace(temp_path, MODEL_PATH)
-            model = candidate_model
-            model_metadata = candidate_metadata
-            model_load_error = None
-        return jsonify(
-            {
-                "success": True,
-                "message": "Compatible model uploaded and loaded",
-                "architecture": model_metadata["architecture"],
-                "threshold": model_metadata["threshold"],
-                "artifact_sha256": model_metadata["artifact_sha256"],
-            }
-        )
-    except Exception as exc:
-        return jsonify({"success": False, "message": f"Incompatible model: {exc}"}), 400
-    finally:
-        if temp_path is not None and temp_path.exists():
-            temp_path.unlink()
-
-
 @app.errorhandler(413)
 def request_too_large(_error):
-    return jsonify({"success": False, "message": "Request body or model file is too large"}), 413
+    return jsonify({"success": False, "message": "Request body is too large"}), 413
 
 
 if __name__ == "__main__":

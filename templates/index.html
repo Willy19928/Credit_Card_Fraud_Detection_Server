@@ -136,7 +136,6 @@
     .button.primary:hover:not(:disabled) { background: var(--accent-dark); color: #fff; }
     .button:disabled { cursor: not-allowed; opacity: 0.45; }
     .actions { display: flex; flex-wrap: wrap; gap: 8px; }
-    input[type="file"] { display: none; }
     .workspace {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 360px;
@@ -215,22 +214,6 @@
       overflow-wrap: anywhere;
     }
     .message.visible { display: block; }
-    .toast {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      z-index: 5;
-      width: min(380px, calc(100vw - 40px));
-      padding: 12px 14px;
-      border: 1px solid var(--safe);
-      background: var(--safe-soft);
-      color: var(--safe);
-      box-shadow: var(--shadow);
-      font-size: 0.74rem;
-      display: none;
-    }
-    .toast.visible { display: block; }
-    .toast.error { border-color: var(--risk); background: var(--risk-soft); color: var(--risk); }
     .batch-panel { display: none; }
     .batch-panel.active { display: block; }
     .single-panel.hidden { display: none; }
@@ -280,8 +263,6 @@
       <span class="brand-context">AISec Final</span>
     </div>
     <div class="top-actions">
-      <label class="button" for="model-file" id="upload-model-label">Upload model</label>
-      <input id="model-file" type="file" accept=".pt">
       <div class="status" id="service-status">
         <span class="status-dot" aria-hidden="true"></span>
         <span id="service-status-text">Connecting</span>
@@ -362,7 +343,6 @@
       </div>
     </section>
   </main>
-  <div class="toast" id="toast" role="status"></div>
 
   <script>
     const state = { schema: null, modelReady: false, samples: [] };
@@ -372,13 +352,6 @@
       const element = $(id);
       element.textContent = message;
       element.classList.toggle("visible", Boolean(message));
-    }
-    function toast(message, error = false) {
-      const element = $("toast");
-      element.textContent = message;
-      element.className = `toast visible ${error ? "error" : ""}`;
-      clearTimeout(toast.timer);
-      toast.timer = setTimeout(() => { element.className = "toast"; }, 4500);
     }
     function setBusy(button, busy, label) {
       button.disabled = busy || !state.modelReady;
@@ -487,32 +460,12 @@
     function applyStatus(status) {
       state.modelReady = Boolean(status.loaded);
       $("model-architecture").textContent = status.architecture || "-";
-      $("model-threshold").textContent = status.threshold ? `${(status.threshold * 100).toFixed(4)}%` : "-";
+      $("model-threshold").textContent = status.threshold === null || status.threshold === undefined ? "-" : `${(status.threshold * 100).toFixed(4)}%`;
       $("model-device").textContent = status.device || "-";
       $("service-status").className = `status ${status.loaded ? "ready" : "error"}`;
       $("service-status-text").textContent = status.loaded ? "Model ready" : "Model unavailable";
       $("score-button").disabled = !status.loaded;
       $("batch-score-button").disabled = !status.loaded;
-      $("upload-model-label").style.display = status.model_upload_enabled ? "inline-block" : "none";
-    }
-    async function refreshStatus() {
-      const response = await fetch("/model_status");
-      applyStatus(await response.json());
-    }
-    async function uploadModel(file) {
-      if (!file.name.toLowerCase().endsWith(".pt")) return toast("Model file must use the .pt extension", true);
-      $("upload-model-label").textContent = "Uploading...";
-      const body = new FormData();
-      body.append("model", file);
-      try {
-        const response = await fetch("/upload_model", { method: "POST", body });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.message || "Upload failed");
-        await refreshStatus();
-        resetResult();
-        toast(`Model loaded. Threshold ${(data.threshold * 100).toFixed(4)}%`);
-      } catch (error) { toast(error.message, true); }
-      finally { $("model-file").value = ""; $("upload-model-label").textContent = "Upload model"; }
     }
     async function initialize() {
       try {
@@ -542,7 +495,6 @@
     $("transaction-form").addEventListener("submit", (event) => { event.preventDefault(); scoreSingle(); });
     $("batch-example-button").addEventListener("click", loadBatchSamples);
     $("batch-score-button").addEventListener("click", scoreBatch);
-    $("model-file").addEventListener("change", () => $("model-file").files[0] && uploadModel($("model-file").files[0]));
     initialize();
   </script>
 </body>
