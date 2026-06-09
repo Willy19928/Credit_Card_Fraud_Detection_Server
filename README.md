@@ -253,6 +253,7 @@ Example response:
   "count": 1,
   "model_version": "sha256:9b53b1504ea09ed8d8b5051d92527978ff9d3eeace7becbe9ef37ce0d7c21bae",
   "model_artifact_sha256": "ef7c96f8734926cee45d06620c24127e44f858d19a40c14717b759811ec8f73d",
+  "decision_policy": "Transactions at or above the threshold require human review.",
   "predictions": [
     {
       "index": 0,
@@ -300,6 +301,10 @@ Default batch limit: `1000`.
 pip install -r requirements-dev.txt
 python -m pytest -q
 python scripts/audit_dependencies.py
+python scripts/update_model_manifest.py
+git diff --exit-code models/model_manifest.json
+docker build -t fraud-inference-ci .
+docker run --rm fraud-inference-ci python -c "from pathlib import Path; required=['primary_mlp.pt','preprocessing.joblib','model_manifest.json','run_metadata.json']; missing=[name for name in required if not Path('/app/models', name).is_file()]; raise SystemExit('missing copied artifacts: '+', '.join(missing) if missing else 0)"
 ```
 
 Server CI runs tests, dependency audit, manifest regeneration checks, Docker
