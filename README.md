@@ -16,6 +16,24 @@ The service:
 - loads replacement model artifacts only at service startup;
 - returns a model version, request ID, and timestamp with each prediction.
 
+## Research Reference
+
+For the required paper citation, the server documentation references Zhang et al.,
+["SecMLOps: A comprehensive framework for integrating security throughout the
+machine learning operations lifecycle"](https://doi.org/10.1007/s10664-025-10795-y)
+(*Empirical Software Engineering*, 2026).
+
+The paper is used to describe how the server's existing controls relate to
+SecMLOps concepts: artifact provenance, automated security checks, input
+validation, checksums, and controlled deployment. In practice, the server
+implements startup artifact validation, SHA-256 verification, strict transaction
+schema checks, CI tests, model-version reporting, and offline-only model
+replacement. It does not claim to implement the paper's complete PTPGC
+organization, continuous monitoring, authentication, authorization, or
+incident-response framework. The detailed mapping is maintained in the training
+repository's
+[RESEARCH_REFERENCE.md](https://github.com/Willy19928/AISec_Final_Credit_Card_Fraud_Detect/blob/main/RESEARCH_REFERENCE.md).
+
 ## Model Contract
 
 Raw requests must contain exactly these 30 numeric fields:
@@ -118,7 +136,8 @@ python .\scripts\update_model_manifest.py
 docker compose up -d --build
 ```
 
-The checkpoint and preprocessing artifact must come from the same notebook run.
+The checkpoint, preprocessing artifact, and run metadata must come from the same
+notebook run.
 The manifest script validates architecture, feature-column order, fitted scaler
 behavior, threshold, finite model parameters, run metadata, and artifact hashes.
 Text artifact hashes use LF-normalized bytes so the manifest is stable across
