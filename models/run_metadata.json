@@ -1,0 +1,160 @@
+{
+  "run_timestamp_utc": "2026-06-02T06:36:17.308176+00:00",
+  "project": "AISec Final - SDG 8 Credit Card Fraud Detection",
+  "dataset": {
+    "dataset_path": "/content/creditcard.csv",
+    "dataset_sha256": "76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89",
+    "shape": [
+      284807,
+      31
+    ],
+    "missing_values_total": 0,
+    "duplicate_rows": 1081,
+    "class_counts": {
+      "0": 284315,
+      "1": 492
+    },
+    "fraud_rate": 0.001727485630620034,
+    "checksum_status": "computed and enforced before loading the dataset"
+  },
+  "split_summary": {
+    "train_samples": 227845,
+    "validation_samples": 28481,
+    "test_samples": 28481,
+    "train_fraud": 394,
+    "validation_fraud": 49,
+    "test_fraud": 49,
+    "feature_count": 34,
+    "feature_columns": [
+      "V1",
+      "V2",
+      "V3",
+      "V4",
+      "V5",
+      "V6",
+      "V7",
+      "V8",
+      "V9",
+      "V10",
+      "V11",
+      "V12",
+      "V13",
+      "V14",
+      "V15",
+      "V16",
+      "V17",
+      "V18",
+      "V19",
+      "V20",
+      "V21",
+      "V22",
+      "V23",
+      "V24",
+      "V25",
+      "V26",
+      "V27",
+      "V28",
+      "Hour",
+      "Hour_sin",
+      "Hour_cos",
+      "scaled_Time",
+      "scaled_Amount",
+      "scaled_log_Amount"
+    ],
+    "split_strategy": "stratified random train/validation/test split",
+    "temporal_validation_performed": false
+  },
+  "environment": {
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.11.0+cu128",
+    "device": "cuda"
+  },
+  "primary_model": {
+    "name": "Primary NN - Tabular MLP",
+    "architecture": "FraudMLP(96-48-16)",
+    "threshold": 0.9838983416557312,
+    "artifact_path": "artifacts/models/primary_mlp.pt",
+    "threshold_selection": "max validation F1; not a review-capacity or business-cost optimization",
+    "artifact_sha256": "ef7c96f8734926cee45d06620c24127e44f858d19a40c14717b759811ec8f73d",
+    "metrics": {
+      "Model": "Primary NN - Tabular MLP",
+      "Threshold": 0.9838983416557312,
+      "Accuracy": 0.999403110845827,
+      "Precision": 0.8478260869565217,
+      "Recall": 0.7959183673469388,
+      "F1-Score": 0.8210526315789474,
+      "ROC-AUC": 0.9800210742710139,
+      "PR-AUC": 0.8267043216826518,
+      "TN": 28425,
+      "FP": 7,
+      "FN": 10,
+      "TP": 39,
+      "Training Seconds": 20.88003897666931,
+      "validation_precision": 0.8297872340425532,
+      "validation_recall": 0.7959183673469388,
+      "validation_f1": 0.8125,
+      "best_epoch": 2.0,
+      "best_validation_pr_auc": 0.7700777429924166
+    }
+  },
+  "approval_gate": {
+    "decision": "deploy with human review",
+    "reasons": [
+      "Classroom gate passed; production use would still require live monitoring and approval."
+    ]
+  },
+  "run_id": "sha256:9b53b1504ea09ed8d8b5051d92527978ff9d3eeace7becbe9ef37ce0d7c21bae",
+  "artifact_set_id": "sha256:9b53b1504ea09ed8d8b5051d92527978ff9d3eeace7becbe9ef37ce0d7c21bae",
+  "preprocessing": {
+    "artifact_path": "artifacts/models/preprocessing.joblib",
+    "artifact_sha256": "39ae79e0c28f7937c74a9ab03356fac0f01e49d3e3a59f2811ece0dbd420ed9b",
+    "feature_columns": [
+      "V1",
+      "V2",
+      "V3",
+      "V4",
+      "V5",
+      "V6",
+      "V7",
+      "V8",
+      "V9",
+      "V10",
+      "V11",
+      "V12",
+      "V13",
+      "V14",
+      "V15",
+      "V16",
+      "V17",
+      "V18",
+      "V19",
+      "V20",
+      "V21",
+      "V22",
+      "V23",
+      "V24",
+      "V25",
+      "V26",
+      "V27",
+      "V28",
+      "Hour",
+      "Hour_sin",
+      "Hour_cos",
+      "scaled_Time",
+      "scaled_Amount",
+      "scaled_log_Amount"
+    ]
+  },
+  "evaluation_limits": {
+    "temporal_validation_performed": false,
+    "temporal_validation_note": "The dataset covers a two-day sequence, but this classroom run uses a stratified random split rather than a future-time holdout.",
+    "permutation_importance_subset": {
+      "rows": 5000,
+      "fraud_cases": 49,
+      "fraud_rate": 0.0098,
+      "base_pr_auc": 0.9233540163886564
+    },
+    "security_stress_scope": "Limited classroom stress tests: PCA noise, amount mimicry, and amount-feature serving skew; not complete coverage of the threat model."
+  }
+}

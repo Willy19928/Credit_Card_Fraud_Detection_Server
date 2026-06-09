@@ -27,6 +27,7 @@ USER appuser
 ENV MODEL_PATH=/app/models/primary_mlp.pt
 ENV PREPROCESSING_PATH=/app/models/preprocessing.joblib
 ENV MODEL_MANIFEST_PATH=/app/models/model_manifest.json
+ENV RUN_METADATA_PATH=/app/models/run_metadata.json
 
 EXPOSE 5000
 

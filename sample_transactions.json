@@ -1,6 +1,6 @@
 [
   {
-    "name": "Normal transaction",
+    "name": "Public dataset normal example, not evaluation evidence",
     "transaction": {
       "Time": 0.0,
       "V1": -1.3598071336738,
@@ -35,7 +35,7 @@
     }
   },
   {
-    "name": "Fraud transaction",
+    "name": "Public dataset fraud example, not evaluation evidence",
     "transaction": {
       "Time": 406.0,
       "V1": -2.3122265423263,

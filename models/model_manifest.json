@@ -6,7 +6,26 @@
   "model_feature_count": 34,
   "artifact_sha256": {
     "primary_mlp.pt": "ef7c96f8734926cee45d06620c24127e44f858d19a40c14717b759811ec8f73d",
-    "preprocessing.joblib": "39ae79e0c28f7937c74a9ab03356fac0f01e49d3e3a59f2811ece0dbd420ed9b"
+    "preprocessing.joblib": "39ae79e0c28f7937c74a9ab03356fac0f01e49d3e3a59f2811ece0dbd420ed9b",
+    "run_metadata.json": "c6fc50e7ebd04a34fee83821674955ca17a49aee5fef918517aaf329bcab2938"
+  },
+  "artifact_set_id": "sha256:9b53b1504ea09ed8d8b5051d92527978ff9d3eeace7becbe9ef37ce0d7c21bae",
+  "training_run": {
+    "run_id": "sha256:9b53b1504ea09ed8d8b5051d92527978ff9d3eeace7becbe9ef37ce0d7c21bae",
+    "artifact_set_id": "sha256:9b53b1504ea09ed8d8b5051d92527978ff9d3eeace7becbe9ef37ce0d7c21bae",
+    "run_timestamp_utc": "2026-06-02T06:36:17.308176+00:00",
+    "dataset_sha256": "76274b691b16a6c49d3f159c883398e03ccd6d1ee12d9d8ee38f4b4b98551a89",
+    "dataset_shape": [
+      284807,
+      31
+    ],
+    "duplicate_rows": 1081,
+    "split_strategy": "stratified random train/validation/test split",
+    "primary_model": {
+      "name": "Primary NN - Tabular MLP",
+      "architecture": "FraudMLP(96-48-16)",
+      "threshold": 0.9838983416557312
+    }
   },
   "source_project": "AISec Final - SDG 8 Credit Card Fraud Detection",
   "intended_use": "Classroom fraud-risk scoring with human review",
