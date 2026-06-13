@@ -37,10 +37,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
 
 ENTRYPOINT ["fraud-inference-entrypoint"]
 
-# One worker keeps the classroom demo resource usage predictable.
+# One threaded worker avoids duplicating the loaded model while allowing browser
+# requests and health checks to run without blocking each other.
 CMD ["gunicorn", \
      "--bind", "0.0.0.0:5000", \
      "--workers", "1", \
+     "--worker-class", "gthread", \
+     "--threads", "8", \
      "--timeout", "120", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
