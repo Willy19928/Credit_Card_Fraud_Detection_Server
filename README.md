@@ -312,6 +312,22 @@ build, and Docker entrypoint artifact-copy checks on trusted branch pushes
 because artifact validation loads PyTorch and joblib files. Do not run
 artifact-loading jobs on unreviewed pull requests from untrusted sources.
 
+The dependency audit has one bounded exception for
+[`CVE-2025-3000`](https://github.com/advisories/GHSA-rrmf-rvhw-rf47).
+GitHub's advisory, updated June 10, 2026, marks every available PyTorch release
+as affected. However, the linked
+[upstream PyTorch issue](https://github.com/pytorch/pytorch/issues/149623)
+demonstrates a `torch.jit.script` segmentation fault on PyTorch 2.6.0 and
+remains an open regular bug without a linked vendor patch or PyTorch security
+advisory. PyTorch's official
+[security policy](https://github.com/pytorch/pytorch/security/policy) states
+that caller-triggered crashes, segmentation faults, and out-of-bounds access
+are regular bugs rather than PyTorch security vulnerabilities because the
+caller can already execute native code. This server does not use
+`torch.jit.script`, and `scripts/audit_dependencies.py` fails if production
+Python code starts referencing it. Reassess this exception if the server starts
+using that API or PyTorch publishes a conflicting vendor advisory or fix.
+
 The classifier is intended for classroom risk scoring with human review. It
 must not automatically block accounts or punish customers without production
 governance, monitoring, and incident-response controls.
